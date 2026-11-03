@@ -21,8 +21,8 @@ bundle exec rubocop                                              # Standard's ru
 bundle exec ruby [--yjit] bench/render.rb                        # render against gretel
 ```
 
-CI calls next-gen-gems/.github's shared `gem-ci.yml@main`: RuboCop, then 3.3, 3.4, 4.0 and ruby-head times each
-Gemfile, plus macOS. A new Rails gets `gemfiles/rails_X_Y.gemfile` and an entry in `ci.yml`'s `gemfiles`.
+CI (`.github/workflows/ci.yml`) runs RuboCop, then every maintained Ruby and ruby-head times each Gemfile. A new
+Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's Gemfile list.
 
 ## Traps
 
