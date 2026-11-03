@@ -211,6 +211,35 @@ end
 # Gretel NGG: nothing to write. new and edit derive « New » under the collection, « Edit » under the record.
 ```
 
+## Checked in tests
+
+A crumb defined twice already raises when its class loads. One test checks the rest, without running a crumb
+or loading a record:
+
+```ruby
+# test/breadcrumbs_test.rb
+require "test_helper"
+require "gretel/ngg/test_helper"
+
+class BreadcrumbsTest < ActiveSupport::TestCase
+  test "breadcrumbs" do
+    assert_breadcrumbs_valid
+  end
+end
+```
+
+It eager-loads the app and reads the source of every crumb (and of the private helpers next to it) with Prism:
+
+- every parent a crumb calls is a crumb, and every `_path` or `_url` it calls is a route helper;
+- every `breadcrumb :name` in `app/views` and `app/controllers` names a crumb some trail defines;
+- every crumb is reachable: called by another crumb, by a view or controller (`breadcrumb :name`,
+  `breadcrumb @record`), by a derived trail (the collection and record of a routed controller), or named after
+  a model. The others are dead, and fail the test.
+
+`Gretel::Ngg.verify!` does the same outside Minitest: it raises `Gretel::Ngg::InvalidTrail` with every problem
+in one message, and returns the dead crumbs (`["Admin::Breadcrumbs#drafts"]`). Both take `trail_classes:`,
+`routes:` and `sources:` (the directories scanned for `breadcrumb` calls).
+
 ## Storefronts
 
 The trail is data, so absolute URLs are just `_url` helpers in that namespace's crumbs:
@@ -230,7 +259,6 @@ end
 
 - Nested routes in derived trails (`/orders/42/messages` → Messages under Order 42), with the order of
   precedence between namespace, controller and view overrides documented.
-- `Gretel::Ngg.verify!` for a test: every parent exists, every route helper exists, and dead crumbs are listed.
 - A JSON-LD `BreadcrumbList` helper for storefronts.
 - A codemod from gretel's `config/breadcrumbs.rb`.
 
