@@ -153,7 +153,11 @@ end
 # gretel
 crumb :order do |order|
   link "Order #{order.number}", admin_order_path(order)
-  parent order.customer ? [:customer_orders, order.customer] : :orders
+  if order.customer
+    parent :customer_orders, order.customer
+  else
+    parent :orders
+  end
 end
 ```
 
@@ -226,13 +230,76 @@ module Storefront
 end
 ```
 
+## Migrating from gretel
+
+An app switches in one go: there is no compatibility layer, and the two gems do not run side by side in
+production. gretel stays in the Gemfile of the migration branch only, for the comparison test below.
+
+### 1. Convert the breadcrumbs file
+
+```sh
+bundle exec gretel-ngg-convert config/breadcrumbs.rb --namespace Admin \
+  --output app/breadcrumbs/admin/breadcrumbs.rb --views app/views/admin
+```
+
+It writes `Admin::Breadcrumbs` and prints, with their line, what it left out or converted with a loss. Several
+files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crumb winning as in gretel.
+
+| gretel | Gretel NGG |
+|---|---|
+| `crumb :key do \|order\| ... end` | `def key(order) ... end`, a parameter tested for nil getting `= nil` |
+| `link label, url` | `crumb label, url`; `link label` or `link label, nil` give a level without a URL |
+| a second `link` | `links: [link(label, url)]` on the same level |
+| `parent :other, order` | `parent: other(order)` |
+| `parent record` | `parent: crumb_for(record)` |
+| `parent :a` and `parent :b` in an `if`/`else` | `parent: condition ? a : b` |
+| `link` and `parent` inside a final `if`, `elsif`, `unless` | one `crumb` call per branch |
+| `t(".x")`, `current_user`: view helpers | `helpers.t(".x")`, `helpers.current_user`; route helpers stay bare |
+| `%i[a b].each { \|name\| crumb name do ... end }`, `{a: "A"}.each` | one method per element |
+
+It lists, without converting them: a loop over anything but a literal array or hash, `link` or `parent`
+anywhere else than at the top of the crumb or in its final conditional, `link` options (`title:`, `class:`),
+crumbs whose name is a Ruby keyword or an existing method (`display`, `test`), and any statement that is not
+a crumb. Comments are kept above the method they precede.
+
+The codemod is built on Prism 1.2 or later: Ruby 3.4 ships it, and on Ruby 3.3 add `gem "prism"` to the
+development group.
+
+### 2. Compare the trails
+
+While gretel is still bundled, a test draws each trail with both gems and lists the differences in labels and
+URLs. gretel shows a crumb's extra links as levels of their own: the comparison does the same with `links`.
+
+```ruby
+require "gretel/ngg/oracle"
+
+class BreadcrumbsMigrationTest < ActionView::TestCase
+  test "Gretel NGG draws the trails gretel drew" do
+    differences = Gretel::Ngg::Oracle.compare(view, Admin::Breadcrumbs, [
+      [:orders], [:order, orders(:alice)], [orders(:alice)], [:returns], [:returns, customers(:alice)]
+    ])
+
+    assert_empty differences, differences.join("\n")
+  end
+end
+```
+
+### 3. Review the call sites
+
+`--views` lists the `breadcrumb` calls that a derived trail may now cover: `:generic_form` (or `:new`,
+`:edit`) in new and edit views, `breadcrumb @order` in a show view, `breadcrumb :orders` in an index view.
+Nothing is deleted: a call goes once its view shows the same trail without it.
+
+### 4. Remove gretel
+
+Drop gretel and `config/breadcrumbs.rb`, and render `breadcrumb_trail` in the layout where `breadcrumbs` was.
+
 ## Roadmap
 
 - Nested routes in derived trails (`/orders/42/messages` → Messages under Order 42), with the order of
   precedence between namespace, controller and view overrides documented.
 - `Gretel::Ngg.verify!` for a test: every parent exists, every route helper exists, and dead crumbs are listed.
 - A JSON-LD `BreadcrumbList` helper for storefronts.
-- A codemod from gretel's `config/breadcrumbs.rb`.
 
 ## Requirements
 
