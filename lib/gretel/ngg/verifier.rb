@@ -112,12 +112,21 @@ module Gretel
         end
       end
 
-      # The crumbs a derived trail reads: the collection and the record of each routed controller.
+      # The crumbs a derived trail reads: the collection and the record of each routed controller, and under a
+      # nested route the collection named after its nesting (order_messages for /orders/:order_id/messages).
       def derived_names
         return [] unless routes
 
-        controller_names = routes.routes.filter_map { |route| route.defaults[:controller]&.split("/")&.last }.uniq
-        controller_names.flat_map { |controller_name| [controller_name.to_sym, controller_name.singularize.to_sym] }
+        routes.routes.flat_map { |route| derived_names_for(route) }.uniq
+      end
+
+      def derived_names_for(route)
+        controller_name = route.defaults[:controller]&.split("/")&.last
+        return [] unless controller_name
+
+        parent_names = route.required_parts.filter_map { |part| part.to_s.delete_suffix("_id") if part.end_with?("_id") }
+        nesting_names = (0..parent_names.size).map { |count| [*parent_names.first(count), controller_name].join("_").to_sym }
+        [*nesting_names, controller_name.singularize.to_sym]
       end
 
       # A crumb named after a model is reachable from any `breadcrumb @record` or `crumb_for(record)`.
