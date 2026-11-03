@@ -47,4 +47,32 @@ class TrailTest < IntegrationTestCase
     assert_trail "Home|/admin > Posts|/admin/posts > New|current", "/admin/posts/new"
     assert_trail "Home|/admin > Posts|/admin/posts > Hello|/admin/posts/5 > Edit|current", "/admin/posts/5/edit"
   end
+
+  test "a nested route derives each parent from the record its controller loaded" do
+    assert_trail "Home|/admin > Posts|/admin/posts > Hello|/admin/posts/5 > " \
+                 "Comments|/admin/posts/5/comments|current",
+      "/admin/posts/5/comments"
+    assert_trail "Home|/admin > Posts|/admin/posts > Hello|/admin/posts/5 > " \
+                 "Comments|/admin/posts/5/comments > First!|/admin/posts/5/comments/9|current",
+      "/admin/posts/5/comments/9"
+    assert_trail "Home|/admin > Posts|/admin/posts > Hello|/admin/posts/5 > " \
+                 "Comments|/admin/posts/5/comments > First!|/admin/posts/5/comments/9 > " \
+                 "Replies|/admin/posts/5/comments/9/replies|current",
+      "/admin/posts/5/comments/9/replies"
+  end
+
+  test "a parent record the controller did not load ends the trail at its collection" do
+    assert_trail "Home|/admin > Posts|/admin/posts > Replies|/admin/posts/5/comments/9/replies|current",
+      "/admin/posts/5/comments/9/replies?without_post=1"
+  end
+
+  test "the view's crumb wins over the namespace's crumb named after the controller, which wins over derivation" do
+    assert_trail "Home|/admin > Sales|current", "/admin/orders/42/notes?breadcrumb=sales_report"
+    assert_trail "Home|/admin > Orders|/admin/orders > Order 2026-0042|/admin/orders/42|Invoice > " \
+                 "Internal notes|/admin/orders/42/notes|current",
+      "/admin/orders/42/notes"
+    assert_trail "Home|/admin > Orders|/admin/orders > Order 2026-0042|/admin/orders/42|Invoice > " \
+                 "Shipments|/admin/orders/42/shipments|current",
+      "/admin/orders/42/shipments"
+  end
 end

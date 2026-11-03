@@ -105,6 +105,23 @@ The record is the one the controller already loaded (`@post` in `PostsController
 again. To change how a trail is derived, override the private methods `collection_crumb`, `record_crumb`,
 `new_record_crumb` or `edit_record_crumb`.
 
+Under a nested route, each `:<name>_id` path parameter is a parent level, outermost first.
+`/admin/posts/5/comments` gives Comments under Post 5 under Posts, the post being `@post`, as the controller
+loaded it: your `post` crumb, or else its `to_s` linked to its `show` route, under the posts collection. A
+parent the controller did not load is never queried: the trail skips the nesting's crumb, keeps that parent's
+collection (Posts) and goes straight to the current level.
+
+### Order of precedence
+
+For any page, the first of these that applies builds the trail:
+
+1. The view's `breadcrumb`.
+2. The namespace's crumb named after the controller: `posts` in `Admin::PostsController#index`, and under a
+   nested route the whole nesting, called with the parents' records (`order_messages(order)` for
+   `/admin/orders/42/messages`). On `show` and `edit`, the crumb named after the record's model (`post`).
+3. The derived trail, whose parent levels follow the same order: your crumb for the parent's model, or else
+   the derived level.
+
 ## Five real-world cases, side by side
 
 ### A nested resource
@@ -118,7 +135,7 @@ end
 ```
 
 ```ruby
-# Gretel NGG, app/breadcrumbs/admin/breadcrumbs.rb
+# Gretel NGG, app/breadcrumbs/admin/breadcrumbs.rb: optional, the nested route derives the same trail
 def order_messages(order)
   crumb "Messages", admin_order_messages_path(order), parent: order(order)
 end
@@ -271,8 +288,6 @@ bundle exec ruby --yjit bench/render.rb
 
 ## Roadmap
 
-- Nested routes in derived trails (`/orders/42/messages` → Messages under Order 42), with the order of
-  precedence between namespace, controller and view overrides documented.
 - `Gretel::Ngg.verify!` for a test: every parent exists, every route helper exists, and dead crumbs are listed.
 - A codemod from gretel's `config/breadcrumbs.rb`.
 

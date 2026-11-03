@@ -4,6 +4,8 @@ module Gretel
   module Ngg
     # One subclass per namespace (Admin::Breadcrumbs < Gretel::Ngg::Trail): each public method defined there is a crumb.
     class Trail
+      RouteParent = Data.define(:name, :id, :record)
+
       # Included after the routes' url_helpers, whose own url_options would otherwise win.
       module UrlOptionsFromView
         def url_options
@@ -157,13 +159,7 @@ module Gretel
 
       # The four crumbs below build a derived trail; override any of them as a private method.
       def collection_crumb
-        name = controller.controller_name.to_sym
-        return public_send(name) if self.class.crumb?(name)
-
-        model_class = controller.controller_name.classify.safe_constantize
-        label = name.to_s.humanize
-        label = model_class.model_name.human(count: 2, default: label) if model_class.respond_to?(:model_name)
-        crumb(label, route_path(action: "index"))
+        nested_collection_crumb(controller.controller_name, route_parents)
       end
 
       def record_crumb(record)
@@ -180,9 +176,56 @@ module Gretel
         crumb(I18n.t("gretel_ngg.edit", default: "Edit"), parent: record_crumb(record))
       end
 
+      # Under a nested route (/orders/42/messages), a crumb named after the whole nesting (order_messages) is
+      # called with the parents' records; otherwise the collection is derived under its parent record.
+      def nested_collection_crumb(name, parents)
+        loaded_parents = parents.take_while(&:record)
+        if loaded_parents.size < parents.size
+          missing_parent = parents[loaded_parents.size]
+          parent = nested_collection_crumb(missing_parent.name.pluralize, loaded_parents)
+          return derived_collection_crumb(name, parents, parent:)
+        end
+
+        crumb_name = [*parents.map(&:name), name].join("_").to_sym
+        return public_send(crumb_name, *parents.map(&:record)) if self.class.crumb?(crumb_name)
+
+        derived_collection_crumb(name, parents, parent: parents.empty? ? nil : parent_record_crumb(parents))
+      end
+
+      def derived_collection_crumb(name, parents, parent:)
+        model_class = name.classify.safe_constantize
+        label = name.humanize
+        label = model_class.model_name.human(count: 2, default: label) if model_class.respond_to?(:model_name)
+        crumb(label, route_path(resources: name, action: "index", **route_parent_ids(parents)), parent:)
+      end
+
+      def parent_record_crumb(parents)
+        *ancestors, parent = parents
+        return crumb_for(parent.record) if crumb_name_for(parent.record)
+
+        name = parent.name.pluralize
+        crumb(parent.record.to_s, route_path(resources: name, action: "show", id: parent.id, **route_parent_ids(ancestors)),
+          parent: nested_collection_crumb(name, ancestors))
+      end
+
+      # The record of each :<name>_id path parameter, outermost first, as the controller loaded it (@<name>).
+      def route_parents
+        controller.request.path_parameters.filter_map do |key, value|
+          next unless key.end_with?("_id")
+
+          name = key.to_s.delete_suffix("_id")
+          RouteParent.new(name:, id: value, record: controller.instance_variable_get(:"@#{name}"))
+        end
+      end
+
+      def route_parent_ids(parents)
+        parents.to_h { |parent| [:"#{parent.name}_id", parent.id] }
+      end
+
       # A controller without an index or show route still gets its level, without a link.
-      def route_path(**options)
-        helpers.url_for(controller: "/#{controller.controller_path}", only_path: true, **options)
+      def route_path(resources: controller.controller_name, **options)
+        namespace = controller.controller_path.delete_suffix(controller.controller_name)
+        helpers.url_for(controller: "/#{namespace}#{resources}", only_path: true, **options)
       rescue ActionController::UrlGenerationError
         nil
       end
