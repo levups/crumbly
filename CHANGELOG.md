@@ -11,3 +11,6 @@
 - A crumb defined twice raises when the class loads; an unknown crumb raises outside production and is reported
   through `ActiveSupport.error_reporter` in production.
 - `breadcrumb_trail` returns data (`label`, `url`, `links`, `current?`) for the app's own components.
+- `Gretel::Ngg.verify!` and `assert_breadcrumbs_valid` (`require "gretel/ngg/test_helper"`) check every trail
+  from its source: unknown parents, unknown route helpers and views calling an undefined crumb raise together in
+  `Gretel::Ngg::InvalidTrail`; dead crumbs are returned, and fail the assertion.

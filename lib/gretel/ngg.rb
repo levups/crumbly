@@ -2,6 +2,7 @@
 
 require "active_support"
 require "active_support/core_ext/class/attribute"
+require "active_support/core_ext/class/subclasses"
 require "active_support/core_ext/module/introspection"
 require "active_support/core_ext/string/inflections"
 require "i18n"
@@ -13,6 +14,7 @@ require_relative "ngg/level"
 require_relative "ngg/trail"
 require_relative "ngg/controller"
 require_relative "ngg/view_helpers"
+require_relative "ngg/verifier"
 require_relative "ngg/railtie" if defined?(Rails::Railtie)
 
 module Gretel
@@ -28,6 +30,12 @@ module Gretel
         return @raise_on_unknown_crumb unless @raise_on_unknown_crumb.nil?
 
         !(defined?(Rails.env) && Rails.env.production?)
+      end
+
+      # Raises InvalidTrail with every problem found, and returns the dead crumbs ("Admin::Breadcrumbs#drafts").
+      def verify!(trail_classes: nil, routes: Ngg.routes, sources: default_sources)
+        Rails.application.eager_load! if trail_classes.nil? && defined?(Rails.application) && Rails.application
+        Verifier.new(trail_classes: trail_classes || Trail.descendants, routes:, sources:).call
       end
 
       # Admin::OrdersController reads Admin::Breadcrumbs, then ::Breadcrumbs, unless it calls breadcrumbs_with.
@@ -47,6 +55,14 @@ module Gretel
         trail_class_name = (namespace == Object) ? "Breadcrumbs" : "#{namespace}::Breadcrumbs"
         raise MissingTrail, "#{controller_class} has no breadcrumbs: define #{trail_class_name} " \
                             "(a Gretel::Ngg::Trail) or call breadcrumbs_with in the controller"
+      end
+
+      private
+
+      def default_sources
+        return [] unless defined?(Rails.root) && Rails.root
+
+        [Rails.root.join("app/views"), Rails.root.join("app/controllers")]
       end
     end
   end
