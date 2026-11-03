@@ -2,6 +2,7 @@
 
 require "active_support"
 require "active_support/core_ext/class/attribute"
+require "active_support/core_ext/class/subclasses"
 require "active_support/core_ext/module/introspection"
 require "active_support/core_ext/string/inflections"
 require "i18n"
@@ -14,6 +15,7 @@ require_relative "ngg/trail"
 require_relative "ngg/json_ld"
 require_relative "ngg/controller"
 require_relative "ngg/view_helpers"
+require_relative "ngg/verifier"
 require_relative "ngg/railtie" if defined?(Rails::Railtie)
 
 module Gretel
@@ -37,6 +39,12 @@ module Gretel
         !production?
       end
 
+      # Raises InvalidTrail with every problem found, and returns the dead crumbs ("Admin::Breadcrumbs#drafts").
+      def verify!(trail_classes: nil, routes: Ngg.routes, sources: default_sources)
+        Rails.application.eager_load! if trail_classes.nil? && defined?(Rails.application) && Rails.application
+        Verifier.new(trail_classes: trail_classes || Trail.descendants, routes:, sources:).call
+      end
+
       # Admin::OrdersController reads Admin::Breadcrumbs, then ::Breadcrumbs, unless it calls breadcrumbs_with.
       def trail_class_for(controller_class)
         explicit_trail_class = controller_class.try(:breadcrumbs_class)
@@ -57,6 +65,12 @@ module Gretel
       end
 
       private
+
+      def default_sources
+        return [] unless defined?(Rails.root) && Rails.root
+
+        [Rails.root.join("app/views"), Rails.root.join("app/controllers")]
+      end
 
       def production?
         defined?(Rails.env) && Rails.env.production?
