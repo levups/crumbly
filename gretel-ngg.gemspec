@@ -16,7 +16,9 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
-  spec.files = Dir["lib/**/*.rb", "LICENSE", "README.md", "CHANGELOG.md"]
+  spec.files = Dir["lib/**/*.rb", "exe/*", "LICENSE", "README.md", "CHANGELOG.md"]
+  spec.bindir = "exe"
+  spec.executables = ["gretel-ngg-convert"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "actionpack", ">= 8.0"

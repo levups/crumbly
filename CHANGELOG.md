@@ -18,3 +18,7 @@
   names, JSON escaped for a `<script>` tag); a relative URL raises `Gretel::Ngg::RelativeUrl` outside production
   and is reported in production. `Gretel::Ngg::JsonLd.call(levels)` returns it as a hash.
 - `bench/render.rb` measures a render against gretel on the same trail.
+- `gretel-ngg-convert` turns gretel's breadcrumbs files into a `Gretel::Ngg::Trail` class, expanding crumbs
+  defined in loops over literals and listing, with their line, what it does not convert. `--views` lists the
+  `breadcrumb` calls a derived trail may now cover.
+- `Gretel::Ngg::Oracle.compare` draws trails with gretel and with Gretel NGG, from a test of an app migrating.
