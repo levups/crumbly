@@ -23,4 +23,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "actionpack", ">= 8.0"
   spec.add_dependency "activesupport", ">= 8.0"
+  spec.add_dependency "loofah", ">= 2.21"
 end

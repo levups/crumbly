@@ -13,19 +13,26 @@ ROUTES.draw do
     resources :orders do
       resources :messages, only: :index
       resources :returns, only: :index
+      resources :notes, only: :index
+      resources :shipments, only: :index
     end
     resources :customers, only: :show do
       resources :returns, only: :index
     end
     resources :returns, only: :index
     resources :categories
-    resources :posts
+    resources :posts do
+      resources :comments, only: [:index, :show] do
+        resources :replies, only: :index
+      end
+    end
     get "reports/sales", to: "reports#sales", as: :sales_report
   end
 
   namespace :storefront do
     root "home#show"
     resources :categories, only: :show
+    get "search", to: "search#show"
   end
 end
 
@@ -85,12 +92,21 @@ class Post < Record
   end
 end
 
+class Comment < Record
+  attr_accessor :body
+
+  def to_s
+    body
+  end
+end
+
 ALICE = Customer.new(id: 7, name: "Alice")
 ORDER = Order.new(id: 42, number: "2026-0042", customer: ALICE)
 AUDIO = Category.new(id: 1, name: "Audio")
 SPEAKERS = Category.new(id: 2, name: "Speakers", parent: AUDIO)
 BOOKSHELF = Category.new(id: 3, name: "Bookshelf speakers", parent: SPEAKERS)
 POST = Post.new(id: 5, title: "Hello")
+COMMENT = Comment.new(id: 9, body: "First!")
 
 module Admin
   class Breadcrumbs < Gretel::Ngg::Trail
@@ -109,6 +125,10 @@ module Admin
 
     def order_messages(order)
       crumb "Messages", admin_order_messages_path(order), parent: order(order)
+    end
+
+    def order_notes(order)
+      crumb "Internal notes", admin_order_notes_path(order), parent: order(order)
     end
 
     def customer(customer)
@@ -158,6 +178,20 @@ module Admin
     end
   end
 
+  class NotesController < ApplicationController
+    def index
+      @order = ORDER
+      render inline: "<% breadcrumb params[:breadcrumb].to_sym if params[:breadcrumb] %>#{OrdersController::TRAIL}"
+    end
+  end
+
+  class ShipmentsController < ApplicationController
+    def index
+      @order = ORDER
+      render inline: OrdersController::TRAIL
+    end
+  end
+
   class ReturnsController < ApplicationController
     def index
       owner = ORDER if params[:order_id]
@@ -194,6 +228,27 @@ module Admin
     end
   end
 
+  class CommentsController < ApplicationController
+    def index
+      @post = POST
+      render inline: OrdersController::TRAIL
+    end
+
+    def show
+      @post = POST
+      @comment = COMMENT
+      render inline: OrdersController::TRAIL
+    end
+  end
+
+  class RepliesController < ApplicationController
+    def index
+      @post = POST unless params[:without_post]
+      @comment = COMMENT
+      render inline: OrdersController::TRAIL
+    end
+  end
+
   class ReportsController < ApplicationController
     def sales
       render inline: "<% breadcrumb :sales_report %>#{OrdersController::TRAIL}"
@@ -210,6 +265,16 @@ module Storefront
     def category(category)
       crumb category.name, storefront_category_url(category),
         parent: category.parent ? category(category.parent) : categories
+    end
+
+    def search(query)
+      crumb "Search: #{query}", storefront_search_url(q: query), parent: categories
+    end
+  end
+
+  class SearchController < ApplicationController
+    def show
+      render inline: "<% breadcrumb :search, params[:q] %><%= breadcrumb_json_ld %>"
     end
   end
 

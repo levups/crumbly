@@ -18,3 +18,7 @@ group :development, :test do
   gem "rubocop-performance", require: false
   gem "standard", require: false
 end
+
+group :development do
+  gem "benchmark-ips", require: false
+end
