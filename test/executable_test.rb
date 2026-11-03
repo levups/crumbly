@@ -5,7 +5,7 @@ require "open3"
 require "tmpdir"
 
 class ExecutableTest < ActiveSupport::TestCase
-  EXECUTABLE = File.expand_path("../exe/gretel-ngg-convert", __dir__)
+  EXECUTABLE = File.expand_path("../exe/gretelx-convert", __dir__)
 
   test "writes the class and prints what it left out" do
     Dir.mktmpdir do |directory|
@@ -27,7 +27,7 @@ class ExecutableTest < ActiveSupport::TestCase
       assert_predicate status, :success?
       assert_empty output
       assert_includes File.read("#{directory}/admin_breadcrumbs.rb"),
-        "module Admin\n  class Breadcrumbs < Gretel::Ngg::Trail\n    def orders\n"
+        "module Admin\n  class Breadcrumbs < GretelX::Trail\n    def orders\n"
       assert_equal "Not converted, or converted with a loss:\n  #{directory}/breadcrumbs.rb:5: crumbs defined in a " \
                    "loop over ADMIN_SECTIONS, which is not a literal: left out, write them by hand\n", errors
     end
@@ -37,6 +37,6 @@ class ExecutableTest < ActiveSupport::TestCase
     _, errors, status = Open3.capture3(RbConfig.ruby, "-Ilib", EXECUTABLE, __FILE__, "--namespace", "admin")
 
     refute_predicate status, :success?
-    assert_equal "gretel-ngg-convert: \"admin\" is not a module name\n", errors
+    assert_equal "gretelx-convert: \"admin\" is not a module name\n", errors
   end
 end

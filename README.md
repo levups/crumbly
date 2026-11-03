@@ -1,8 +1,8 @@
-# Gretel NGG
+# GretelX
 
 Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests.
 
-Guide, migration from gretel, breadcrumbs_on_rails and loaf: [next-gen-gems.github.io/gretel-ngg](https://next-gen-gems.github.io/gretel-ngg/)
+Guide, migration from gretel, breadcrumbs_on_rails and loaf: [next-gen-gems.github.io/gretelx](https://next-gen-gems.github.io/gretelx/)
 
 [gretel](https://github.com/kzkn/gretel) works, but on a real back office (one file of about 1,000 lines,
 265 crumbs, 380 call sites), its shape is what hurts:
@@ -13,7 +13,7 @@ Guide, migration from gretel, breadcrumbs_on_rails and loaf: [next-gen-gems.gith
 - blocks run through `instance_exec` and helpers reached through `method_missing`;
 - every trail written by hand, even when the routes already describe it.
 
-Gretel NGG keeps gretel's good idea (a crumb names its parent) and changes the rest:
+GretelX keeps gretel's good idea (a crumb names its parent) and changes the rest:
 
 - **One class per namespace.** `Admin::Breadcrumbs` and `Storefront::Breadcrumbs` each hold their own crumbs,
   under the same names if they like. Zeitwerk loads them, so they load before a prefork server forks.
@@ -29,7 +29,7 @@ Gretel NGG keeps gretel's good idea (a crumb names its parent) and changes the r
 ## Installation
 
 ```ruby
-gem "gretel-ngg"
+gem "gretelx"
 ```
 
 The railtie adds `breadcrumb`, `breadcrumb_trail` and `breadcrumb_json_ld` to your views, and `breadcrumbs_with` to your controllers.
@@ -39,7 +39,7 @@ The railtie adds `breadcrumb`, `breadcrumb_trail` and `breadcrumb_json_ld` to yo
 ```ruby
 # app/breadcrumbs/admin/breadcrumbs.rb
 module Admin
-  class Breadcrumbs < Gretel::Ngg::Trail
+  class Breadcrumbs < GretelX::Trail
     def root
       crumb "Home", admin_root_path
     end
@@ -78,7 +78,7 @@ end
   `link(label, url)`s for a level that points to more than one page.
 - `crumb_for(record)` is the crumb of a record found by its model, which is how you write a polymorphic parent.
 - Private methods are helpers, not crumbs. View helpers are reached through `helpers` (`helpers.t(".orders")`).
-- Every name that works in a view is a crumb, so `Gretel::Ngg::Trail` keeps its own methods private. The ones
+- Every name that works in a view is a crumb, so `GretelX::Trail` keeps its own methods private. The ones
   your crumbs must not be named after are `crumb`, `link`, `crumb_for` and `helpers`.
 
 ### Namespaces
@@ -100,8 +100,8 @@ When a view does not call `breadcrumb`, the trail follows the action:
 |---|---|
 | `index` | the collection: your `posts` crumb, or else the model's plural name linked to the `index` route |
 | `show` | the record: your `post` crumb, or else `to_s` linked to the `show` route, under the collection |
-| `new`, `create` | « New » (`gretel_ngg.new`) under the collection |
-| `edit`, `update` | « Edit » (`gretel_ngg.edit`) under the record |
+| `new`, `create` | « New » (`gretelx.new`) under the collection |
+| `edit`, `update` | « Edit » (`gretelx.edit`) under the record |
 
 The record is the one the controller already loaded (`@post` in `PostsController`): it is never looked up
 again. To change how a trail is derived, override the private methods `collection_crumb`, `record_crumb`,
@@ -137,7 +137,7 @@ end
 ```
 
 ```ruby
-# Gretel NGG, app/breadcrumbs/admin/breadcrumbs.rb: optional, the nested route derives the same trail
+# GretelX, app/breadcrumbs/admin/breadcrumbs.rb: optional, the nested route derives the same trail
 def order_messages(order)
   crumb "Messages", admin_order_messages_path(order), parent: order(order)
 end
@@ -158,7 +158,7 @@ end
 ```
 
 ```ruby
-# Gretel NGG
+# GretelX
 def returns(owner = nil)
   return crumb("Returns", admin_returns_path) unless owner
 
@@ -181,7 +181,7 @@ end
 ```
 
 ```ruby
-# Gretel NGG
+# GretelX
 def order(order)
   crumb "Order #{order.number}", admin_order_path(order),
     parent: order.customer ? customer_orders(order.customer) : orders
@@ -202,7 +202,7 @@ end
 ```
 
 ```ruby
-# Gretel NGG
+# GretelX
 def category(category, ancestors = category.ancestors.to_a)
   *grandparents, parent_category = ancestors
   crumb category.name, admin_category_path(category),
@@ -231,7 +231,7 @@ end
 ```
 
 ```ruby
-# Gretel NGG: nothing to write. new and edit derive « New » under the collection, « Edit » under the record.
+# GretelX: nothing to write. new and edit derive « New » under the collection, « Edit » under the record.
 ```
 
 ## Checked in tests
@@ -242,7 +242,7 @@ or loading a record:
 ```ruby
 # test/breadcrumbs_test.rb
 require "test_helper"
-require "gretel/ngg/test_helper"
+require "gretelx/test_helper"
 
 class BreadcrumbsTest < ActiveSupport::TestCase
   test "breadcrumbs" do
@@ -259,7 +259,7 @@ It eager-loads the app and reads the source of every crumb (and of the private h
   `breadcrumb @record`), by a derived trail (the collection and record of a routed controller), or named after
   a model. The others are dead, and fail the test.
 
-`Gretel::Ngg.verify!` does the same outside Minitest: it raises `Gretel::Ngg::InvalidTrail` with every problem
+`GretelX.verify!` does the same outside Minitest: it raises `GretelX::InvalidTrail` with every problem
 in one message, and returns the dead crumbs (`["Admin::Breadcrumbs#drafts"]`). Both take `trail_classes:`,
 `routes:` and `sources:` (the directories scanned for `breadcrumb` calls).
 
@@ -269,7 +269,7 @@ The trail is data, so absolute URLs are just `_url` helpers in that namespace's 
 
 ```ruby
 module Storefront
-  class Breadcrumbs < Gretel::Ngg::Trail
+  class Breadcrumbs < GretelX::Trail
     def category(category)
       crumb category.name, storefront_category_url(category),
         parent: category.parent ? category(category.parent) : shop
@@ -290,16 +290,16 @@ for its breadcrumb rich result:
   so it is left out.
 - A name is plain text: an `html_safe` label (an icon, a `<b>`) has its markup stripped and its entities decoded.
 - The JSON is escaped for a `<script>` tag, so a label cannot close it.
-- Google only takes absolute URLs: a relative one raises `Gretel::Ngg::RelativeUrl` in development and test.
+- Google only takes absolute URLs: a relative one raises `GretelX::RelativeUrl` in development and test.
   In production it is reported and the page renders without a `BreadcrumbList`. Set
-  `Gretel::Ngg.raise_on_relative_url` to choose.
-- `Gretel::Ngg::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
+  `GretelX.raise_on_relative_url` to choose.
+- `GretelX::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
   structured data.
 
 ## Performance
 
 `bench/render.rb` renders the same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) with
-gretel and with Gretel NGG, and checks that both produce the same output. The `<ol>` is gretel's
+gretel and with GretelX, and checks that both produce the same output. The `<ol>` is gretel's
 `breadcrumbs(style: :ol)` against a ten-line helper over `breadcrumb_trail`. The JSON-LD is gretel's
 `structured_data(url_base:)` (paths behind a prefix) against `breadcrumb_json_ld` (`_url` helpers), both
 encoded and escaped the same way.
@@ -309,9 +309,9 @@ Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three r
 | Render | Allocations | Time, YJIT off | Time, YJIT on |
 |---|---|---|---|
 | gretel `<ol>` | 345 | 57.6 µs | 35.1 µs |
-| Gretel NGG `<ol>` | 274 | 45.4 µs | 29.8 µs |
+| GretelX `<ol>` | 274 | 45.4 µs | 29.8 µs |
 | gretel JSON-LD | 268 | 41.3 µs | 25.4 µs |
-| Gretel NGG JSON-LD | 287 | 43.3 µs | 29.5 µs |
+| GretelX JSON-LD | 287 | 43.3 µs | 29.5 µs |
 
 Most of the JSON-LD gap comes from Rails' `_url` helpers, which are slower than `_path` ones: building the
 `BreadcrumbList` from the levels accounts for 1.7 µs of it.
@@ -329,14 +329,14 @@ production. gretel stays in the Gemfile of the migration branch only, for the co
 ### 1. Convert the breadcrumbs file
 
 ```sh
-bundle exec gretel-ngg-convert config/breadcrumbs.rb --namespace Admin \
+bundle exec gretelx-convert config/breadcrumbs.rb --namespace Admin \
   --output app/breadcrumbs/admin/breadcrumbs.rb --views app/views/admin
 ```
 
 It writes `Admin::Breadcrumbs` and prints, with their line, what it left out or converted with a loss. Several
 files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crumb winning as in gretel.
 
-| gretel | Gretel NGG |
+| gretel | GretelX |
 |---|---|
 | `crumb :key do \|order\| ... end` | `def key(order) ... end`, a parameter tested for nil getting `= nil` |
 | `link label, url` | `crumb label, url`; `link label` or `link label, nil` give a level without a URL |
@@ -362,11 +362,11 @@ While gretel is still bundled, a test draws each trail with both gems and lists 
 URLs. gretel shows a crumb's extra links as levels of their own: the comparison does the same with `links`.
 
 ```ruby
-require "gretel/ngg/oracle"
+require "gretelx/oracle"
 
 class BreadcrumbsMigrationTest < ActionView::TestCase
-  test "Gretel NGG draws the trails gretel drew" do
-    differences = Gretel::Ngg::Oracle.compare(view, Admin::Breadcrumbs, [
+  test "GretelX draws the trails gretel drew" do
+    differences = GretelX::Oracle.compare(view, Admin::Breadcrumbs, [
       [:orders], [:order, orders(:alice)], [orders(:alice)], [:returns], [:returns, customers(:alice)]
     ])
 

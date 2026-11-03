@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "gretel/ngg/converter"
+require "gretelx/converter"
 
 class ConverterTest < ActiveSupport::TestCase
   FIXTURES = File.expand_path("fixtures", __dir__)
 
   test "a gretel breadcrumbs file becomes a Trail class, and what is left out is listed with its line" do
-    result = Gretel::Ngg::Converter.call({"config/breadcrumbs.rb" => File.read("#{FIXTURES}/gretel_breadcrumbs.rb")},
+    result = GretelX::Converter.call({"config/breadcrumbs.rb" => File.read("#{FIXTURES}/gretel_breadcrumbs.rb")},
       namespace: "Converted")
 
     assert_equal File.read("#{FIXTURES}/converted_breadcrumbs.rb"), result.ruby
     assert_equal [
       "config/breadcrumbs.rb:7: crumb :orders is defined again on config/breadcrumbs.rb:89, which gretel kept: left out",
-      "config/breadcrumbs.rb:72: crumb :help: link options target: \"_blank\" have no equivalent in Gretel NGG: left out",
+      "config/breadcrumbs.rb:72: crumb :help: link options target: \"_blank\" have no equivalent in GretelX: left out",
       "config/breadcrumbs.rb:77: crumb :order_items calls link or parent inside " \
       "order.items.each { |item| link item.n...: left out, convert it by hand",
       "config/breadcrumbs.rb:81: not a crumb definition, left out: REPORTS = %i[margins taxes].freeze",
@@ -142,7 +142,7 @@ class ConverterTest < ActiveSupport::TestCase
   end
 
   test "a crumb a Trail cannot hold is listed, with the line inside its loop" do
-    result = Gretel::Ngg::Converter.call({"breadcrumbs.rb" => <<~GRETEL})
+    result = GretelX::Converter.call({"breadcrumbs.rb" => <<~GRETEL})
       %i[display orders].each do |name|
         crumb name do
           link name.to_s
@@ -156,17 +156,17 @@ class ConverterTest < ActiveSupport::TestCase
   end
 
   test "a file Ruby cannot parse raises with its line" do
-    error = assert_raises(ArgumentError) { Gretel::Ngg::Converter.call({"breadcrumbs.rb" => "crumb :a do\n"}) }
+    error = assert_raises(ArgumentError) { GretelX::Converter.call({"breadcrumbs.rb" => "crumb :a do\n"}) }
     assert_match(/\Abreadcrumbs.rb:\d+: /, error.message)
   end
 
   private
 
   def assert_crumb(expected, gretel)
-    result = Gretel::Ngg::Converter.call({"breadcrumbs.rb" => gretel})
+    result = GretelX::Converter.call({"breadcrumbs.rb" => gretel})
 
     assert_empty result.notes.map(&:to_s)
-    expected_class = "# frozen_string_literal: true\n\nclass Breadcrumbs < Gretel::Ngg::Trail\n" \
+    expected_class = "# frozen_string_literal: true\n\nclass Breadcrumbs < GretelX::Trail\n" \
                      "#{expected.gsub(/^(?=.)/, "  ")}end\n"
     assert_equal expected_class, result.ruby
   end

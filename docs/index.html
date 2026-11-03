@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gretel NGG</title>
+<title>GretelX</title>
 <meta name="description" content="Breadcrumbs for Rails: one class per namespace, one Ruby method per crumb, trails derived from your routes, mistakes raised early.">
-<meta property="og:title" content="Gretel NGG — breadcrumbs for Rails">
+<meta property="og:title" content="GretelX — breadcrumbs for Rails">
 <meta property="og:description" content="Namespaced breadcrumbs, derived from your routes, checked in tests. The trail is data your own components render.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#2340e8">
@@ -19,20 +19,20 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <div class="page">
   <nav class="site-nav" aria-label="Site">
-    <a class="brand" href="./" aria-current="page">Gretel NGG</a>
+    <a class="brand" href="./" aria-current="page">GretelX</a>
     <a href="guide.html">Guide</a>
     <a href="migration.html">Migration</a>
     <a href="benchmarks.html">Benchmarks</a>
-    <a href="https://github.com/next-gen-gems/gretel-ngg">GitHub</a>
+    <a href="https://github.com/next-gen-gems/gretelx">GitHub</a>
   </nav>
 
   <main id="content">
     <header class="hero">
-      <h1 class="wordmark"><span>Gretel</span><span>NGG</span></h1>
+      <h1 class="wordmark"><span>Gretel</span><span>X</span></h1>
       <div>
         <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">Namespaced, derived from your routes, checked early.</span></p>
         <p class="summary">One class of plain Ruby methods per namespace. A view that names no crumb gets the trail of its action. The trail comes back as data, and your own component renders it.</p>
-        <code class="install">gem "gretel-ngg"</code>
+        <code class="install">gem "gretelx"</code>
         <p class="links"><a href="guide.html">Get started</a><a href="migration.html">Migrating from gretel, breadcrumbs_on_rails or loaf</a></p>
       </div>
     </header>
@@ -47,7 +47,7 @@
           <li>blocks run through <code>instance_exec</code>, and helpers reached through <code>method_missing</code>;</li>
           <li>every trail written by hand, even when the routes already describe it.</li>
         </ul>
-        <p>Gretel NGG keeps gretel’s good idea, a crumb names its parent, and changes the rest.</p>
+        <p>GretelX keeps gretel’s good idea, a crumb names its parent, and changes the rest.</p>
       </div>
     </section>
 
@@ -84,7 +84,7 @@
 
     <section aria-labelledby="cases-title">
       <h2 id="cases-title">Five cases, side by side</h2>
-      <p class="note">gretel on the left, in <code>config/breadcrumbs.rb</code>; Gretel NGG on the right, in <code>app/breadcrumbs/admin/breadcrumbs.rb</code>.</p>
+      <p class="note">gretel on the left, in <code>config/breadcrumbs.rb</code>; GretelX on the right, in <code>app/breadcrumbs/admin/breadcrumbs.rb</code>.</p>
 
       <div class="case">
         <h3>A nested resource</h3>
@@ -97,7 +97,7 @@
 end</code></pre>
           </div>
           <div>
-            <p class="code-label">Gretel NGG</p>
+            <p class="code-label">GretelX</p>
 <pre><code>def order_messages(order)
   crumb "Messages", admin_order_messages_path(order),
     parent: order(order)
@@ -121,7 +121,7 @@ end</code></pre>
 end</code></pre>
           </div>
           <div>
-            <p class="code-label">Gretel NGG</p>
+            <p class="code-label">GretelX</p>
 <pre><code>def returns(owner = nil)
   return crumb("Returns", admin_returns_path) unless owner
 
@@ -143,7 +143,7 @@ end</code></pre>
 end</code></pre>
           </div>
           <div>
-            <p class="code-label">Gretel NGG</p>
+            <p class="code-label">GretelX</p>
 <pre><code>def order(order)
   crumb "Order #{order.number}", admin_order_path(order),
     parent: order.customer ? customer_orders(order.customer) : orders
@@ -165,7 +165,7 @@ end</code></pre>
 end</code></pre>
           </div>
           <div>
-            <p class="code-label">Gretel NGG</p>
+            <p class="code-label">GretelX</p>
 <pre><code>def category(category, ancestors = category.ancestors.to_a)
   *grandparents, parent_category = ancestors
   crumb category.name, admin_category_path(category),
@@ -193,7 +193,7 @@ end</code></pre>
 &lt;% breadcrumb :generic_form, @post %&gt;</code></pre>
           </div>
           <div>
-            <p class="code-label">Gretel NGG</p>
+            <p class="code-label">GretelX</p>
 <pre><code># Nothing to write: new and edit derive
 # « New » under the collection,
 # « Edit » under the record.</code></pre>
@@ -208,7 +208,7 @@ end</code></pre>
         <div>
           <p class="code-label">app/breadcrumbs/admin/breadcrumbs.rb</p>
 <pre><code>module Admin
-  class Breadcrumbs &lt; Gretel::Ngg::Trail
+  class Breadcrumbs &lt; GretelX::Trail
     def root
       crumb "Home", admin_root_path
     end

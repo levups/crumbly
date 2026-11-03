@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "gretel/ngg/test_helper"
+require "gretelx/test_helper"
 require "tmpdir"
 
 module Checked
-  class UnknownParent < Gretel::Ngg::Trail
+  class UnknownParent < GretelX::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -15,13 +15,13 @@ module Checked
     end
   end
 
-  class UnknownRouteHelper < Gretel::Ngg::Trail
+  class UnknownRouteHelper < GretelX::Trail
     def orders
       crumb "Orders", admin_order_list_path
     end
   end
 
-  class DeadCrumb < Gretel::Ngg::Trail
+  class DeadCrumb < GretelX::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -31,7 +31,7 @@ module Checked
     end
   end
 
-  class CalledFromHelper < Gretel::Ngg::Trail
+  class CalledFromHelper < GretelX::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -58,32 +58,32 @@ class VerifyTest < ActiveSupport::TestCase
 
   test "every crumb, parent, route helper and view call checks out" do
     with_views(VIEWS) do |views|
-      assert_equal [], Gretel::Ngg.verify!(trail_classes: [Admin::Breadcrumbs, Storefront::Breadcrumbs], sources: [views])
+      assert_equal [], GretelX.verify!(trail_classes: [Admin::Breadcrumbs, Storefront::Breadcrumbs], sources: [views])
       assert_breadcrumbs_valid(trail_classes: [Admin::Breadcrumbs, Storefront::Breadcrumbs], sources: [views])
     end
   end
 
   test "an unknown parent" do
-    error = assert_raises(Gretel::Ngg::InvalidTrail) { verify(Checked::UnknownParent) }
+    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::UnknownParent) }
     assert_match(/Checked::UnknownParent#order calls order_list, which is not a crumb \(.*verify_test.rb:14\)/,
       error.message)
   end
 
   test "an unknown route helper" do
-    error = assert_raises(Gretel::Ngg::InvalidTrail) { verify(Checked::UnknownRouteHelper) }
+    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::UnknownRouteHelper) }
     assert_match "Checked::UnknownRouteHelper#orders calls admin_order_list_path, which is not a route helper",
       error.message
   end
 
   test "a crumb called from a view but never defined" do
     with_views("admin/invoices/index.html.erb" => "<h1>Invoices</h1>\n<% breadcrumb :invoices %>") do |views|
-      error = assert_raises(Gretel::Ngg::InvalidTrail) { verify(Checked::DeadCrumb, sources: [views]) }
+      error = assert_raises(GretelX::InvalidTrail) { verify(Checked::DeadCrumb, sources: [views]) }
       assert_match "admin/invoices/index.html.erb:2 calls breadcrumb :invoices, which no trail defines", error.message
     end
   end
 
   test "every problem in one message" do
-    error = assert_raises(Gretel::Ngg::InvalidTrail) { verify(Checked::UnknownParent, Checked::UnknownRouteHelper) }
+    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::UnknownParent, Checked::UnknownRouteHelper) }
     assert_match(/\A2 breadcrumb problem\(s\):\n- .*order_list.*\n- .*admin_order_list_path/, error.message)
   end
 
@@ -104,7 +104,7 @@ class VerifyTest < ActiveSupport::TestCase
   private
 
   def verify(*trail_classes, sources: [])
-    Gretel::Ngg.verify!(trail_classes:, sources:)
+    GretelX.verify!(trail_classes:, sources:)
   end
 
   def with_views(views)

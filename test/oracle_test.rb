@@ -3,7 +3,7 @@
 require "test_helper"
 require "rails"
 require "gretel"
-require "gretel/ngg/oracle"
+require "gretelx/oracle"
 require_relative "fixtures/converted_breadcrumbs"
 
 class OracleTest < ActiveSupport::TestCase
@@ -25,16 +25,16 @@ class OracleTest < ActiveSupport::TestCase
       [:returns, ORDER], [:returns, ALICE], [:category, BOOKSHELF], [:posts], [:sales_report], [:help]
     ]
 
-    assert_empty Gretel::Ngg::Oracle.compare(@view, Converted::Breadcrumbs, cases).map(&:to_s)
+    assert_empty GretelX::Oracle.compare(@view, Converted::Breadcrumbs, cases).map(&:to_s)
   end
 
   test "a difference shows both trails" do
-    differences = Gretel::Ngg::Oracle.compare(@view, Admin::Breadcrumbs, [[:customer, ALICE], [:order_messages, ORDER]])
+    differences = GretelX::Oracle.compare(@view, Admin::Breadcrumbs, [[:customer, ALICE], [:order_messages, ORDER]])
 
     assert_equal [<<~TEXT.chomp], differences.map(&:to_s)
       breadcrumb :order_messages, #<Order 42>
         gretel:     Home (/admin) > Alice (/admin/customers/7) > Order 2026-0042 (/admin/orders/42) > Invoice (/admin/orders/42/invoice.pdf) > Messages (/admin/orders/42/messages)
-        gretel-ngg: Home (/admin) > Orders (/admin/orders) > Order 2026-0042 (/admin/orders/42) > Invoice (/admin/orders/42/invoice.pdf) > Messages (/admin/orders/42/messages)
+        gretelx: Home (/admin) > Orders (/admin/orders) > Order 2026-0042 (/admin/orders/42) > Invoice (/admin/orders/42/invoice.pdf) > Messages (/admin/orders/42/messages)
     TEXT
   end
 end
