@@ -30,7 +30,7 @@ Gretel NGG keeps gretel's good idea (a crumb names its parent) and changes the r
 gem "gretel-ngg"
 ```
 
-The railtie adds `breadcrumb` and `breadcrumb_trail` to your views, and `breadcrumbs_with` to your controllers.
+The railtie adds `breadcrumb`, `breadcrumb_trail` and `breadcrumb_json_ld` to your views, and `breadcrumbs_with` to your controllers.
 
 ## Usage
 
@@ -226,12 +226,29 @@ module Storefront
 end
 ```
 
+`breadcrumb_json_ld` renders the same trail as a schema.org `BreadcrumbList`, the structured data Google reads
+for its breadcrumb rich result:
+
+```erb
+<%# app/views/layouts/storefront.html.erb, in <head> %>
+<%= breadcrumb_json_ld %>
+```
+
+- Positions start at 1, and the current level may have no URL. A level above it without a URL is not a page,
+  so it is left out.
+- A name is plain text: an `html_safe` label (an icon, a `<b>`) has its markup stripped and its entities decoded.
+- The JSON is escaped for a `<script>` tag, so a label cannot close it.
+- Google only takes absolute URLs: a relative one raises `Gretel::Ngg::RelativeUrl` in development and test.
+  In production it is reported and the page renders without a `BreadcrumbList`. Set
+  `Gretel::Ngg.raise_on_relative_url` to choose.
+- `Gretel::Ngg::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
+  structured data.
+
 ## Roadmap
 
 - Nested routes in derived trails (`/orders/42/messages` → Messages under Order 42), with the order of
   precedence between namespace, controller and view overrides documented.
 - `Gretel::Ngg.verify!` for a test: every parent exists, every route helper exists, and dead crumbs are listed.
-- A JSON-LD `BreadcrumbList` helper for storefronts.
 - A codemod from gretel's `config/breadcrumbs.rb`.
 
 ## Requirements

@@ -11,6 +11,7 @@ require_relative "ngg/errors"
 require_relative "ngg/crumb"
 require_relative "ngg/level"
 require_relative "ngg/trail"
+require_relative "ngg/json_ld"
 require_relative "ngg/controller"
 require_relative "ngg/view_helpers"
 require_relative "ngg/railtie" if defined?(Rails::Railtie)
@@ -18,7 +19,7 @@ require_relative "ngg/railtie" if defined?(Rails::Railtie)
 module Gretel
   module Ngg
     class << self
-      attr_writer :routes, :raise_on_unknown_crumb
+      attr_writer :routes, :raise_on_unknown_crumb, :raise_on_relative_url
 
       def routes
         @routes || (Rails.application&.routes if defined?(Rails.application))
@@ -27,7 +28,13 @@ module Gretel
       def raise_on_unknown_crumb?
         return @raise_on_unknown_crumb unless @raise_on_unknown_crumb.nil?
 
-        !(defined?(Rails.env) && Rails.env.production?)
+        !production?
+      end
+
+      def raise_on_relative_url?
+        return @raise_on_relative_url unless @raise_on_relative_url.nil?
+
+        !production?
       end
 
       # Admin::OrdersController reads Admin::Breadcrumbs, then ::Breadcrumbs, unless it calls breadcrumbs_with.
@@ -47,6 +54,12 @@ module Gretel
         trail_class_name = (namespace == Object) ? "Breadcrumbs" : "#{namespace}::Breadcrumbs"
         raise MissingTrail, "#{controller_class} has no breadcrumbs: define #{trail_class_name} " \
                             "(a Gretel::Ngg::Trail) or call breadcrumbs_with in the controller"
+      end
+
+      private
+
+      def production?
+        defined?(Rails.env) && Rails.env.production?
       end
     end
   end

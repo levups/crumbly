@@ -8,3 +8,7 @@
 - A crumb defined twice raises when the class loads; an unknown crumb raises outside production and is reported
   through `ActiveSupport.error_reporter` in production.
 - `breadcrumb_trail` returns data (`label`, `url`, `links`, `current?`) for the app's own components.
+- `breadcrumb_json_ld` renders the trail as a schema.org `BreadcrumbList` for Google's rich results (plain-text
+  names, JSON escaped for a `<script>` tag); a relative URL raises `Gretel::Ngg::RelativeUrl` outside production
+  and is reported in production. `Gretel::Ngg::JsonLd.call(levels)` returns it as a hash.
+- `bench/render.rb` measures a render against gretel on the same trail.

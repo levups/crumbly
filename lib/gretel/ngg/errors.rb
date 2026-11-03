@@ -9,5 +9,7 @@ module Gretel
     class UnknownCrumb < Error; end
 
     class MissingTrail < Error; end
+
+    class RelativeUrl < Error; end
   end
 end
