@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Migrating to Gretel NGG</title>
+<meta name="description" content="Move to Gretel NGG from gretel, breadcrumbs_on_rails or loaf: what maps to what, and what you can delete.">
+<meta name="theme-color" content="#2340e8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter+Tight:wght@400;600&family=Fira+Code&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<div class="page">
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="./">Gretel NGG</a>
+    <a href="guide.html">Guide</a>
+    <a href="migration.html" aria-current="page">Migration</a>
+    <a href="benchmarks.html">Benchmarks</a>
+    <a href="https://github.com/next-gen-gems/gretel-ngg">GitHub</a>
+  </nav>
+
+  <main id="content">
+    <header>
+      <h1 class="page-title">Migration</h1>
+      <p class="lede">Each of these gems names its view helpers like the others, so the old gem leaves the Gemfile in the commit that brings Gretel NGG in.</p>
+      <ul class="toc">
+        <li><a href="#gretel">From gretel</a></li>
+        <li><a href="#breadcrumbs-on-rails">From breadcrumbs_on_rails</a></li>
+        <li><a href="#loaf">From loaf</a></li>
+      </ul>
+    </header>
+
+    <section id="gretel" aria-labelledby="gretel-title">
+      <h2 id="gretel-title">From gretel</h2>
+      <div class="prose">
+        <p>The shape stays the same, a crumb that names its parent, and view call sites barely change: <code>breadcrumb :order, @order</code> and <code>breadcrumb @order</code> work as they did. What moves is <code>config/breadcrumbs.rb</code>, split into one class per namespace.</p>
+        <table class="options">
+          <thead><tr><th scope="col">gretel</th><th scope="col">Gretel NGG</th></tr></thead>
+          <tbody>
+            <tr><td><code>config/breadcrumbs.rb</code></td><td><code>app/breadcrumbs/admin/breadcrumbs.rb</code>, one per namespace</td></tr>
+            <tr><td><code>crumb :order do |order|</code></td><td><code>def order(order)</code></td></tr>
+            <tr><td><code>link "Orders", admin_orders_path</code></td><td><code>crumb "Orders", admin_orders_path</code></td></tr>
+            <tr><td><code>parent :order, order</code></td><td><code>parent: order(order)</code></td></tr>
+            <tr><td><code>parent owner</code> (a record)</td><td><code>parent: crumb_for(owner)</code></td></tr>
+            <tr><td><code>crumb :root</code></td><td><code>def root</code>, which starts every trail</td></tr>
+            <tr><td><code>&lt;%= breadcrumbs style: :bootstrap5 %&gt;</code></td><td>Your own component, looping over <code>breadcrumb_trail</code></td></tr>
+            <tr><td>A generic crumb for forms</td><td>Nothing: <code>new</code> and <code>edit</code> derive their trail</td></tr>
+            <tr><td>Keys prefixed by area (<code>:admin_order</code>)</td><td>The namespace does it: <code>Admin::Breadcrumbs#order</code></td></tr>
+          </tbody>
+        </table>
+        <h3>Steps</h3>
+        <ol>
+          <li>Replace <code>gem "gretel"</code> with <code>gem "gretel-ngg"</code>.</li>
+          <li>For each area of the app, create its trail class and move its crumbs, one method each. Area prefixes in the keys can go, and so can the views’ <code>breadcrumb</code> calls that only repeat what their action derives (index, show, new, edit).</li>
+          <li>Replace the <code>breadcrumbs</code> call in each layout with a loop over <code>breadcrumb_trail</code>; the <a href="guide.html#rendering">guide</a> has one. gretel’s rendering options (separator, <code>link_current</code>, semantic markup) become choices in that markup.</li>
+          <li>Run the test suite: a crumb defined twice raises as soon as its class loads, and an unknown crumb raises when its page renders.</li>
+        </ol>
+        <p>A codemod from <code>config/breadcrumbs.rb</code> is on the roadmap.</p>
+      </div>
+    </section>
+
+    <section id="breadcrumbs-on-rails" aria-labelledby="bor-title">
+      <h2 id="bor-title">From breadcrumbs_on_rails</h2>
+      <div class="prose">
+        <p><a href="https://github.com/weppos/breadcrumbs_on_rails">breadcrumbs_on_rails</a> builds the trail in controllers: <code>add_breadcrumb</code> at class level (a path as a symbol is called on the controller, with <code>only:</code> and <code>except:</code> to pick actions), then inside actions, each call appended to the last. <code>render_breadcrumbs</code> draws it, with a <code>separator:</code> or a custom <code>builder:</code>.</p>
+        <p>Gretel NGG builds the trail from the other end: the view names its last crumb, and each crumb names its parent. Most <code>add_breadcrumb</code> calls disappear, because <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code> derive the same trail from the routes and the record the controller loaded.</p>
+      </div>
+      <div class="split">
+        <div>
+          <p class="code-label">breadcrumbs_on_rails</p>
+<pre><code>class Admin::OrdersController &lt; Admin::BaseController
+  add_breadcrumb "Home", :admin_root_path
+  add_breadcrumb "Orders", :admin_orders_path
+
+  def show
+    @order = Order.find(params[:id])
+    add_breadcrumb @order.to_s, admin_order_path(@order)
+  end
+
+  def messages
+    @order = Order.find(params[:id])
+    add_breadcrumb @order.to_s, admin_order_path(@order)
+    add_breadcrumb "Messages", messages_admin_order_path(@order)
+  end
+end</code></pre>
+<pre><code>&lt;%= render_breadcrumbs separator: " / " %&gt;</code></pre>
+        </div>
+        <div>
+          <p class="code-label">Gretel NGG</p>
+<pre><code>module Admin
+  class Breadcrumbs &lt; Gretel::Ngg::Trail
+    def root
+      crumb "Home", admin_root_path
+    end
+
+    def orders
+      crumb "Orders", admin_orders_path
+    end
+
+    def order(order)
+      crumb order.to_s, admin_order_path(order), parent: orders
+    end
+
+    def order_messages(order)
+      crumb "Messages", messages_admin_order_path(order), parent: order(order)
+    end
+  end
+end</code></pre>
+<pre><code>&lt;%# app/views/admin/orders/messages.html.erb %&gt;
+&lt;% breadcrumb :order_messages, @order %&gt;</code></pre>
+          <p class="code-label">index and show find their crumbs on their own; without <code>orders</code> and <code>order</code>, they would still derive « Orders » and the order’s <code>to_s</code></p>
+        </div>
+      </div>
+      <div class="prose">
+        <h3>Steps</h3>
+        <ol>
+          <li>Replace <code>gem "breadcrumbs_on_rails"</code> with <code>gem "gretel-ngg"</code>.</li>
+          <li>The class-level « Home » becomes <code>root</code> in each namespace’s trail class. A class-level section crumb (« Orders ») becomes a crumb named after the controller, <code>orders</code>, only if the derived label (the model’s human plural name) is not the one you want.</li>
+          <li>Delete the <code>add_breadcrumb</code> calls of <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code>. For other actions, write a crumb and name it from the view with <code>breadcrumb</code>.</li>
+          <li>Replace <code>render_breadcrumbs</code> with a loop over <code>breadcrumb_trail</code>. A custom builder becomes that loop, or your component.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="loaf" aria-labelledby="loaf-title">
+      <h2 id="loaf-title">From loaf</h2>
+      <div class="prose">
+        <p><a href="https://github.com/piotrmurach/loaf">loaf</a> appends crumbs with <code>breadcrumb</code>: at controller class level (with <code>only:</code> and <code>except:</code>), inside actions, or in views. Its <code>breadcrumb_trail</code> yields each crumb, with <code>name</code>, <code>url</code> and <code>current?</code>, to a block, and decides <code>current?</code> by comparing the crumb’s URL with the request (the <code>match:</code> option).</p>
+        <p>Gretel NGG uses the same two helper names, so loaf must go first. Its <code>breadcrumb</code> names one crumb instead of appending one, its <code>breadcrumb_trail</code> returns an array instead of taking a block, and the current level is simply the last.</p>
+      </div>
+      <div class="split">
+        <div>
+          <p class="code-label">loaf</p>
+<pre><code>class Admin::CategoriesController &lt; Admin::BaseController
+  breadcrumb "Home", :admin_root_path
+  breadcrumb "Categories", :admin_categories_path
+
+  def show
+    @category = Category.find(params[:id])
+    @category.ancestors.each do |ancestor|
+      breadcrumb ancestor.name, admin_category_path(ancestor)
+    end
+    breadcrumb @category.name, admin_category_path(@category)
+  end
+end</code></pre>
+<pre><code>&lt;% breadcrumb_trail do |crumb| %&gt;
+  &lt;li&gt;&lt;%= link_to crumb.name, crumb.url %&gt;&lt;/li&gt;
+&lt;% end %&gt;</code></pre>
+        </div>
+        <div>
+          <p class="code-label">Gretel NGG</p>
+<pre><code>module Admin
+  class Breadcrumbs &lt; Gretel::Ngg::Trail
+    def root
+      crumb "Home", admin_root_path
+    end
+
+    def categories
+      crumb "Categories", admin_categories_path
+    end
+
+    def category(category, ancestors = category.ancestors.to_a)
+      *grandparents, parent_category = ancestors
+      crumb category.name, admin_category_path(category),
+        parent: parent_category ? category(parent_category, grandparents) : categories
+    end
+  end
+end</code></pre>
+<pre><code>&lt;% breadcrumb_trail.each do |level| %&gt;
+  &lt;li&gt;&lt;%= link_to_unless level.current?, level.label, level.url %&gt;&lt;/li&gt;
+&lt;% end %&gt;</code></pre>
+          <p class="code-label">show finds the <code>category</code> crumb on its own: the view names nothing</p>
+        </div>
+      </div>
+      <div class="prose">
+        <h3>Steps</h3>
+        <ol>
+          <li>Replace <code>gem "loaf"</code> with <code>gem "gretel-ngg"</code>.</li>
+          <li>Move the controllers’ class-level crumbs into each namespace’s trail class: « Home » becomes <code>root</code>, a section becomes a crumb named after the controller.</li>
+          <li>Delete the crumbs appended in <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code>, and turn the others into crumbs that name their parent.</li>
+          <li>In views, a run of <code>breadcrumb "Name", path</code> calls becomes one crumb method, named with <code>breadcrumb :name</code>.</li>
+          <li>In the layout, <code>breadcrumb_trail do |crumb|</code> becomes <code>breadcrumb_trail.each do |level|</code>, and <code>crumb.name</code> becomes <code>level.label</code>.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Made by <a href="https://github.com/levups">Level UP Solutions</a></span>
+    <span>MIT license. Built on the ideas of <a href="https://github.com/kzkn/gretel">gretel</a>.</span>
+  </footer>
+</div>
+</body>
+</html>

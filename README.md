@@ -2,6 +2,8 @@
 
 Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests.
 
+Guide, migration from gretel, breadcrumbs_on_rails and loaf: [next-gen-gems.github.io/gretel-ngg](https://next-gen-gems.github.io/gretel-ngg/)
+
 [gretel](https://github.com/kzkn/gretel) works, but on a real back office (one file of about 1,000 lines,
 265 crumbs, 380 call sites), its shape is what hurts:
 

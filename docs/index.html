@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gretel NGG</title>
+<meta name="description" content="Breadcrumbs for Rails: one class per namespace, one Ruby method per crumb, trails derived from your routes, mistakes raised early.">
+<meta property="og:title" content="Gretel NGG — breadcrumbs for Rails">
+<meta property="og:description" content="Namespaced breadcrumbs, derived from your routes, checked in tests. The trail is data your own components render.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#2340e8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter+Tight:wght@400;600&family=Fira+Code&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+<a class="skip-link" href="#content">Skip to content</a>
+<div class="page">
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="./" aria-current="page">Gretel NGG</a>
+    <a href="guide.html">Guide</a>
+    <a href="migration.html">Migration</a>
+    <a href="benchmarks.html">Benchmarks</a>
+    <a href="https://github.com/next-gen-gems/gretel-ngg">GitHub</a>
+  </nav>
+
+  <main id="content">
+    <header class="hero">
+      <h1 class="wordmark"><span>Gretel</span><span>NGG</span></h1>
+      <div>
+        <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">Namespaced, derived from your routes, checked early.</span></p>
+        <p class="summary">One class of plain Ruby methods per namespace. A view that names no crumb gets the trail of its action. The trail comes back as data, and your own component renders it.</p>
+        <code class="install">gem "gretel-ngg"</code>
+        <p class="links"><a href="guide.html">Get started</a><a href="migration.html">Migrating from gretel, breadcrumbs_on_rails or loaf</a></p>
+      </div>
+    </header>
+
+    <section aria-labelledby="why-title">
+      <h2 id="why-title">Why</h2>
+      <div class="prose">
+        <p><a href="https://github.com/kzkn/gretel">gretel</a> works. But on a real back office (one file of about 1,000 lines, 265 crumbs, 380 call sites), its shape is what hurts:</p>
+        <ul>
+          <li>one global file and one flat namespace, where a crumb defined twice silently replaces the first, and an admin area cannot keep its breadcrumbs apart from a storefront’s;</li>
+          <li>mistakes that only show when someone opens the page;</li>
+          <li>blocks run through <code>instance_exec</code>, and helpers reached through <code>method_missing</code>;</li>
+          <li>every trail written by hand, even when the routes already describe it.</li>
+        </ul>
+        <p>Gretel NGG keeps gretel’s good idea, a crumb names its parent, and changes the rest.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="changes-title">
+      <h2 id="changes-title">What changes</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>One class per namespace</h3>
+          <p><code>Admin::Breadcrumbs</code> and <code>Storefront::Breadcrumbs</code> each hold their own crumbs, under the same names if they like. Zeitwerk loads them, so they load before a prefork server forks.</p>
+          <p><a href="guide.html#namespaces">Namespaces</a></p>
+        </div>
+        <div class="card">
+          <h3>One crumb per Ruby method</h3>
+          <p>The parent is a plain method call, and the URL helpers come from your routes. No DSL, no <code>method_missing</code>, and a backtrace points at the method.</p>
+          <p><a href="guide.html#usage">Usage</a></p>
+        </div>
+        <div class="card">
+          <h3>Derived by default</h3>
+          <p>A view that names no crumb gets the trail of its action, built from the routes and the record its controller already loaded.</p>
+          <p><a href="guide.html#derived">Derived trails</a></p>
+        </div>
+        <div class="card">
+          <h3>Mistakes raise early</h3>
+          <p>A crumb defined twice raises when the class loads. An unknown crumb raises in development and test; in production it is reported and the page renders without a trail.</p>
+          <p><a href="guide.html#errors">Errors</a></p>
+        </div>
+        <div class="card">
+          <h3>Data, not HTML</h3>
+          <p><code>breadcrumb_trail</code> returns levels (label, URL, extra links, <code>current?</code>). No styles, no renderer options: your component decides the markup.</p>
+          <p><a href="guide.html#rendering">Rendering</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="cases-title">
+      <h2 id="cases-title">Five cases, side by side</h2>
+      <p class="note">gretel on the left, in <code>config/breadcrumbs.rb</code>; Gretel NGG on the right, in <code>app/breadcrumbs/admin/breadcrumbs.rb</code>.</p>
+
+      <div class="case">
+        <h3>A nested resource</h3>
+        <div class="split">
+          <div>
+            <p class="code-label">gretel</p>
+<pre><code>crumb :order_messages do |order|
+  link "Messages", admin_order_messages_path(order)
+  parent :order, order
+end</code></pre>
+          </div>
+          <div>
+            <p class="code-label">Gretel NGG</p>
+<pre><code>def order_messages(order)
+  crumb "Messages", admin_order_messages_path(order),
+    parent: order(order)
+end</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="case">
+        <h3>A polymorphic parent</h3>
+        <div class="split">
+          <div>
+            <p class="code-label">gretel</p>
+<pre><code>crumb :returns do |owner|
+  if owner
+    link "Returns", [:admin, owner, :returns]
+    parent owner
+  else
+    link "Returns", admin_returns_path
+  end
+end</code></pre>
+          </div>
+          <div>
+            <p class="code-label">Gretel NGG</p>
+<pre><code>def returns(owner = nil)
+  return crumb("Returns", admin_returns_path) unless owner
+
+  crumb "Returns", [:admin, owner, :returns],
+    parent: crumb_for(owner)
+end</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="case">
+        <h3>A label computed from the record</h3>
+        <div class="split">
+          <div>
+            <p class="code-label">gretel</p>
+<pre><code>crumb :order do |order|
+  link "Order #{order.number}", admin_order_path(order)
+  parent order.customer ? [:customer_orders, order.customer] : :orders
+end</code></pre>
+          </div>
+          <div>
+            <p class="code-label">Gretel NGG</p>
+<pre><code>def order(order)
+  crumb "Order #{order.number}", admin_order_path(order),
+    parent: order.customer ? customer_orders(order.customer) : orders
+end</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="case">
+        <h3>A recursive tree</h3>
+        <p>The ancestors are loaded once, in one query, and handed down the recursion.</p>
+        <div class="split">
+          <div>
+            <p class="code-label">gretel</p>
+<pre><code>crumb :category do |category, ancestors = category.ancestors.to_a|
+  link category.name, admin_category_path(category)
+  *grandparents, parent_category = ancestors
+  parent_category ? parent(:category, parent_category, grandparents) : parent(:categories)
+end</code></pre>
+          </div>
+          <div>
+            <p class="code-label">Gretel NGG</p>
+<pre><code>def category(category, ancestors = category.ancestors.to_a)
+  *grandparents, parent_category = ancestors
+  crumb category.name, admin_category_path(category),
+    parent: parent_category ? category(parent_category, grandparents) : categories
+end</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="case">
+        <h3>A form</h3>
+        <div class="split">
+          <div>
+            <p class="code-label">gretel: one generic crumb, called from each new and edit view</p>
+<pre><code>crumb :generic_form do |model|
+  if model.new_record?
+    link "New", nil
+    parent model.class.model_name.plural.to_sym
+  else
+    link "Edit", nil
+    parent model
+  end
+end</code></pre>
+<pre><code>&lt;%# app/views/admin/posts/edit.html.erb %&gt;
+&lt;% breadcrumb :generic_form, @post %&gt;</code></pre>
+          </div>
+          <div>
+            <p class="code-label">Gretel NGG</p>
+<pre><code># Nothing to write: new and edit derive
+# « New » under the collection,
+# « Edit » under the record.</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="start-title">
+      <h2 id="start-title">Quick start</h2>
+      <div class="split">
+        <div>
+          <p class="code-label">app/breadcrumbs/admin/breadcrumbs.rb</p>
+<pre><code>module Admin
+  class Breadcrumbs &lt; Gretel::Ngg::Trail
+    def root
+      crumb "Home", admin_root_path
+    end
+
+    def orders
+      crumb "Orders", admin_orders_path
+    end
+
+    def order(order)
+      crumb order.to_s, admin_order_path(order), parent: orders
+    end
+  end
+end</code></pre>
+        </div>
+        <div>
+          <p class="code-label">app/views/layouts/admin.html.erb</p>
+<pre><code>&lt;nav aria-label="Breadcrumb"&gt;
+  &lt;ol&gt;
+    &lt;% breadcrumb_trail.each do |level| %&gt;
+      &lt;li&gt;&lt;%= link_to_unless level.current?, level.label, level.url %&gt;&lt;/li&gt;
+    &lt;% end %&gt;
+  &lt;/ol&gt;
+&lt;/nav&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Made by <a href="https://github.com/levups">Level UP Solutions</a></span>
+    <span>MIT license. Built on the ideas of <a href="https://github.com/kzkn/gretel">gretel</a>.</span>
+  </footer>
+</div>
+</body>
+</html>
