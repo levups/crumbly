@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gretel NGG Guide</title>
+<meta name="description" content="Install Gretel NGG, write a namespace's crumbs, render the trail, let actions derive it, and know what raises.">
+<meta name="theme-color" content="#2340e8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Inter+Tight:wght@400;600&family=Fira+Code&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<div class="page">
+  <nav class="site-nav" aria-label="Site">
+    <a class="brand" href="./">Gretel NGG</a>
+    <a href="guide.html" aria-current="page">Guide</a>
+    <a href="migration.html">Migration</a>
+    <a href="benchmarks.html">Benchmarks</a>
+    <a href="https://github.com/next-gen-gems/gretel-ngg">GitHub</a>
+  </nav>
+
+  <main id="content">
+    <header>
+      <h1 class="page-title">Guide</h1>
+      <p class="lede">A trail class per namespace, a method per crumb, and a view that names its crumb or lets its action derive one.</p>
+      <ul class="toc">
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#rendering">Rendering</a></li>
+        <li><a href="#namespaces">Namespaces</a></li>
+        <li><a href="#derived">Derived trails</a></li>
+        <li><a href="#storefronts">Storefronts</a></li>
+        <li><a href="#errors">Errors</a></li>
+      </ul>
+    </header>
+
+    <section id="installation" aria-labelledby="installation-title">
+      <h2 id="installation-title">Installation</h2>
+      <div class="prose">
+<pre><code># Gemfile
+gem "gretel-ngg"</code></pre>
+        <p>The railtie adds <code>breadcrumb</code> and <code>breadcrumb_trail</code> to your views, and <code>breadcrumbs_with</code> to your controllers. Ruby 3.3 or later, Rails 8.0 or later (Action Pack and Active Support).</p>
+      </div>
+    </section>
+
+    <section id="usage" aria-labelledby="usage-title">
+      <h2 id="usage-title">Usage</h2>
+      <div class="prose">
+        <p>A namespace’s crumbs live in one subclass of <code>Gretel::Ngg::Trail</code>. Each public method is a crumb; its parent is a call to another one.</p>
+<pre><code># app/breadcrumbs/admin/breadcrumbs.rb
+module Admin
+  class Breadcrumbs &lt; Gretel::Ngg::Trail
+    def root
+      crumb "Home", admin_root_path
+    end
+
+    def orders
+      crumb "Orders", admin_orders_path
+    end
+
+    def order(order)
+      crumb order.to_s, admin_order_path(order), parent: orders
+    end
+
+    def order_documents(order)
+      crumb "Documents", nil, parent: order(order),
+        links: [link("Invoices", admin_order_invoices_path(order)), link("Receipts", admin_order_receipts_path(order))]
+    end
+  end
+end</code></pre>
+<pre><code>&lt;%# app/views/admin/orders/show.html.erb: optional, this is what the trail derives on its own %&gt;
+&lt;% breadcrumb @order %&gt;</code></pre>
+        <h3>In a view</h3>
+        <ul>
+          <li><code>breadcrumb :name, *arguments</code> calls the crumb named <code>name</code> with those arguments.</li>
+          <li><code>breadcrumb @record</code> calls the crumb named after the record’s model (<code>order</code> for an <code>Order</code>). A single-table inheritance subclass with no crumb of its own falls back on its parent class’s.</li>
+          <li>A view that calls neither gets a <a href="#derived">derived trail</a>.</li>
+        </ul>
+        <h3>In a trail class</h3>
+        <table class="options">
+          <thead><tr><th scope="col">Method</th><th scope="col">What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> takes a string, a record or a polymorphic array (<code>[:admin, owner, :returns]</code>), or nothing for a level without a link.</td></tr>
+            <tr><td><code>link label, url</code></td><td>An extra link, for <code>links:</code>, when a level points to more than one page.</td></tr>
+            <tr><td><code>crumb_for record</code></td><td>The crumb of a record, found by its model: how you write a polymorphic parent.</td></tr>
+            <tr><td><code>helpers</code></td><td>The view context: <code>helpers.t(".orders")</code>, <code>helpers.current_user</code>.</td></tr>
+            <tr><td><code>root</code></td><td>Not provided: when you define it, it starts every trail.</td></tr>
+          </tbody>
+        </table>
+        <p>Private methods are helpers, not crumbs. Every public method is callable from a view, so <code>Gretel::Ngg::Trail</code> keeps its own methods private; your crumbs must not be named <code>crumb</code>, <code>link</code>, <code>crumb_for</code> or <code>helpers</code>.</p>
+      </div>
+    </section>
+
+    <section id="rendering" aria-labelledby="rendering-title">
+      <h2 id="rendering-title">Rendering</h2>
+      <div class="prose">
+        <p><code>breadcrumb_trail</code> returns an array of levels, root first. Each level has <code>label</code>, <code>url</code> (a path, or <code>nil</code>), <code>links</code> (each with <code>label</code> and <code>url</code>) and <code>current?</code>, true on the last one. The gem ships no HTML: whether the current page is a link, which separator to use, and how a level with extra links looks are your component’s choices.</p>
+<pre><code>&lt;%# app/views/layouts/admin.html.erb %&gt;
+&lt;nav aria-label="Breadcrumb"&gt;
+  &lt;ol&gt;
+    &lt;% breadcrumb_trail.each do |level| %&gt;
+      &lt;li&gt;
+        &lt;%= link_to_unless level.current?, level.label, level.url %&gt;
+        &lt;% level.links.each do |link| %&gt;
+          &lt;%= link_to link.label, link.url %&gt;
+        &lt;% end %&gt;
+      &lt;/li&gt;
+    &lt;% end %&gt;
+  &lt;/ol&gt;
+&lt;/nav&gt;</code></pre>
+        <p>A view’s <code>breadcrumb</code> call must come before the layout reads <code>breadcrumb_trail</code>, which is the case for anything in the view itself, since Rails renders the view before its layout.</p>
+      </div>
+    </section>
+
+    <section id="namespaces" aria-labelledby="namespaces-title">
+      <h2 id="namespaces-title">Namespaces</h2>
+      <div class="prose">
+        <p><code>Admin::OrdersController</code> reads <code>Admin::Breadcrumbs</code>, falling back on enclosing modules and then on a top-level <code>Breadcrumbs</code>. Two namespaces may both define <code>order</code>: they never see each other.</p>
+        <p>A controller outside the namespace picks a trail class explicitly. Subclasses inherit the choice:</p>
+<pre><code>class CheckoutController &lt; ApplicationController
+  breadcrumbs_with Storefront::Breadcrumbs
+end</code></pre>
+        <p>The classes live in <code>app/breadcrumbs/</code>, an autoloaded directory, so Zeitwerk loads them with the rest of the app and eager loading has them in memory before a prefork server forks.</p>
+      </div>
+    </section>
+
+    <section id="derived" aria-labelledby="derived-title">
+      <h2 id="derived-title">Derived trails</h2>
+      <div class="prose">
+        <p>When a view does not call <code>breadcrumb</code>, the trail follows the action:</p>
+        <table>
+          <thead><tr><th scope="col">Action</th><th scope="col">Trail</th></tr></thead>
+          <tbody>
+            <tr><td><code>index</code></td><td>The collection: your <code>posts</code> crumb, or else the model’s human plural name linked to the <code>index</code> route.</td></tr>
+            <tr><td><code>show</code></td><td>The record: your <code>post</code> crumb, or else its <code>to_s</code> linked to the <code>show</code> route, under the collection.</td></tr>
+            <tr><td><code>new</code>, <code>create</code></td><td>« New » under the collection.</td></tr>
+            <tr><td><code>edit</code>, <code>update</code></td><td>« Edit » under the record.</td></tr>
+          </tbody>
+        </table>
+        <p>The record is the one the controller already loaded, <code>@post</code> in <code>PostsController</code>: it is never looked up again, and without it <code>show</code> and <code>edit</code> derive no trail. A controller with no <code>index</code> or <code>show</code> route still gets its level, without a link. Other actions derive nothing.</p>
+        <h3>Labels</h3>
+        <p>« New » and « Edit » are translated through <code>gretel_ngg.new</code> and <code>gretel_ngg.edit</code>:</p>
+<pre><code># config/locales/es.yml
+es:
+  gretel_ngg:
+    new: Nuevo
+    edit: Editar</code></pre>
+        <h3>Overrides</h3>
+        <p>To change how a trail is derived in a namespace, override any of four private methods in its trail class: <code>collection_crumb</code>, <code>record_crumb(record)</code>, <code>new_record_crumb</code>, <code>edit_record_crumb(record)</code>. The <code>controller</code> they read is private too.</p>
+<pre><code>module Admin
+  class Breadcrumbs &lt; Gretel::Ngg::Trail
+    private
+
+    def new_record_crumb
+      crumb helpers.t("admin.breadcrumbs.new"), parent: collection_crumb
+    end
+  end
+end</code></pre>
+        <p>Nested routes (<code>/orders/42/messages</code> as Messages under Order 42) are not derived yet: write those crumbs and name them from the view.</p>
+      </div>
+    </section>
+
+    <section id="storefronts" aria-labelledby="storefronts-title">
+      <h2 id="storefronts-title">Storefronts</h2>
+      <div class="prose">
+        <p>The trail is data, so absolute URLs are just <code>_url</code> helpers in that namespace’s crumbs. They read the host from the current request.</p>
+<pre><code>module Storefront
+  class Breadcrumbs &lt; Gretel::Ngg::Trail
+    def shop
+      crumb "Shop", storefront_root_url
+    end
+
+    def category(category)
+      crumb category.name, storefront_category_url(category),
+        parent: category.parent ? category(category.parent) : shop
+    end
+  end
+end</code></pre>
+      </div>
+    </section>
+
+    <section id="errors" aria-labelledby="errors-title">
+      <h2 id="errors-title">Errors</h2>
+      <div class="prose">
+        <p>Every error is a <code>Gretel::Ngg::Error</code>.</p>
+        <table class="options">
+          <thead><tr><th scope="col">Error</th><th scope="col">When</th></tr></thead>
+          <tbody>
+            <tr><td><code>Gretel::Ngg::DuplicateCrumb</code></td><td>A trail class defines the same public method twice. Raised when the class loads, so at boot with eager loading, and in any test that loads it.</td></tr>
+            <tr><td><code>Gretel::Ngg::UnknownCrumb</code></td><td>A view names a crumb that does not exist, or <code>breadcrumb @record</code> / <code>crumb_for</code> finds no crumb for the record’s model. Raised in development and test; in production, reported through <code>Rails.error</code> and the page renders without a trail.</td></tr>
+            <tr><td><code>Gretel::Ngg::MissingTrail</code></td><td>A view reads the trail of a controller that has no trail class, neither found from its module nor set with <code>breadcrumbs_with</code>. The message names the class to define.</td></tr>
+          </tbody>
+        </table>
+        <p>To change where an unknown crumb raises, set it in an initializer:</p>
+<pre><code># config/initializers/gretel_ngg.rb
+Gretel::Ngg.raise_on_unknown_crumb = true # on staging too</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Made by <a href="https://github.com/levups">Level UP Solutions</a></span>
+    <span>MIT license. Built on the ideas of <a href="https://github.com/kzkn/gretel">gretel</a>.</span>
+  </footer>
+</div>
+</body>
+</html>
