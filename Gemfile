@@ -10,9 +10,15 @@ group :development, :test do
   gem "actionpack", "~> #{rails_version}.0"
   gem "activemodel", "~> #{rails_version}.0"
   gem "activesupport", "~> #{rails_version}.0"
+  gem "gretel"
   gem "minitest"
+  gem "prism", ">= 1.2"
   gem "rake"
   gem "rubocop", require: false
   gem "rubocop-performance", require: false
   gem "standard", require: false
+end
+
+group :development do
+  gem "benchmark-ips", require: false
 end

@@ -17,9 +17,12 @@ Gem::Specification.new do |spec|
   spec.metadata["documentation_uri"] = "https://next-gen-gems.github.io/gretel-ngg/"
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
-  spec.files = Dir["lib/**/*.rb", "LICENSE", "README.md", "CHANGELOG.md"]
+  spec.files = Dir["lib/**/*.rb", "exe/*", "LICENSE", "README.md", "CHANGELOG.md"]
+  spec.bindir = "exe"
+  spec.executables = ["gretel-ngg-convert"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "actionpack", ">= 8.0"
   spec.add_dependency "activesupport", ">= 8.0"
+  spec.add_dependency "loofah", ">= 2.21"
 end
