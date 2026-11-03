@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gretel NGG Benchmarks</title>
-<meta name="description" content="Gretel NGG against gretel on the same trails: render time, allocations and memory per process.">
+<title>GretelX Benchmarks</title>
+<meta name="description" content="GretelX against gretel on the same five-level trail: render time and allocations, as an ol and as JSON-LD, with and without YJIT.">
 <meta name="theme-color" content="#2340e8">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,24 +16,44 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <div class="page">
   <nav class="site-nav" aria-label="Site">
-    <a class="brand" href="./">Gretel NGG</a>
+    <a class="brand" href="./">GretelX</a>
     <a href="guide.html">Guide</a>
     <a href="migration.html">Migration</a>
     <a href="benchmarks.html" aria-current="page">Benchmarks</a>
-    <a href="https://github.com/next-gen-gems/gretel-ngg">GitHub</a>
+    <a href="https://github.com/next-gen-gems/gretelx">GitHub</a>
   </nav>
 
   <main id="content">
     <header>
       <h1 class="page-title">Benchmarks</h1>
-      <p class="lede">Gretel NGG against gretel, on the same trails.</p>
+      <p class="lede">GretelX against gretel, on the same trails.</p>
     </header>
 
-    <section aria-labelledby="pending-title">
-      <h2 id="pending-title">Not measured yet</h2>
-      <div class="placeholder">
-        <p>The numbers come with the pull request that adds the JSON-LD <code>BreadcrumbList</code> helper and the benchmark suite. Until then, this page publishes none.</p>
-        <p>What will be measured: the time and allocations of a render, with YJIT, on the same trails in both gems, and the memory each process holds for its breadcrumbs.</p>
+    <section aria-labelledby="results-title">
+      <h2 id="results-title">Rendering a trail</h2>
+      <div class="prose">
+        <p><code>bench/render.rb</code> renders the same five-level trail (Home &gt; Customers &gt; Alice &gt; Orders &gt; Order 2026-0042) with gretel and with GretelX, and checks that both produce the same output. The <code>&lt;ol&gt;</code> is gretel’s <code>breadcrumbs(style: :ol)</code> against a ten-line helper over <code>breadcrumb_trail</code>. The JSON-LD is gretel’s <code>structured_data(url_base:)</code> (paths behind a prefix) against <code>breadcrumb_json_ld</code> (<code>_url</code> helpers), both encoded and escaped the same way.</p>
+        <table>
+          <caption>Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three runs of benchmark-ips</caption>
+          <thead><tr><th scope="col">Render</th><th scope="col">Allocations</th><th scope="col">Time, YJIT off</th><th scope="col">Time, YJIT on</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">gretel <code>&lt;ol&gt;</code></th><td>345</td><td>57.6 µs</td><td>35.1 µs</td></tr>
+            <tr><th scope="row">GretelX <code>&lt;ol&gt;</code></th><td>274</td><td>45.4 µs</td><td>29.8 µs</td></tr>
+            <tr><th scope="row">gretel JSON-LD</th><td>268</td><td>41.3 µs</td><td>25.4 µs</td></tr>
+            <tr><th scope="row">GretelX JSON-LD</th><td>287</td><td>43.3 µs</td><td>29.5 µs</td></tr>
+          </tbody>
+        </table>
+        <p>Most of the JSON-LD gap comes from Rails’ <code>_url</code> helpers, which are slower than <code>_path</code> ones: building the <code>BreadcrumbList</code> from the levels accounts for 1.7 µs of it.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="rerun-title">
+      <h2 id="rerun-title">Running it again</h2>
+      <div class="prose">
+        <p>From a checkout of the gem, once with YJIT off and once with it on:</p>
+<pre><code>bundle exec ruby bench/render.rb
+bundle exec ruby --yjit bench/render.rb</code></pre>
+        <p>Run each three times and keep the median. Numbers depend on the machine: compare the two gems on the same one, not against this table.</p>
       </div>
     </section>
   </main>

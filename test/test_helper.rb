@@ -4,7 +4,7 @@ require "minitest/autorun"
 require "action_controller"
 require "action_dispatch/testing/integration"
 require "active_model"
-require "gretel/ngg"
+require "gretelx"
 
 ROUTES = ActionDispatch::Routing::RouteSet.new
 ROUTES.draw do
@@ -36,9 +36,9 @@ ROUTES.draw do
   end
 end
 
-Gretel::Ngg.routes = ROUTES
-ActionController::Base.include(Gretel::Ngg::Controller)
-ActionView::Base.include(Gretel::Ngg::ViewHelpers)
+GretelX.routes = ROUTES
+ActionController::Base.include(GretelX::Controller)
+ActionView::Base.include(GretelX::ViewHelpers)
 
 class ApplicationController < ActionController::Base
   include ROUTES.url_helpers
@@ -109,7 +109,7 @@ POST = Post.new(id: 5, title: "Hello")
 COMMENT = Comment.new(id: 9, body: "First!")
 
 module Admin
-  class Breadcrumbs < Gretel::Ngg::Trail
+  class Breadcrumbs < GretelX::Trail
     def root
       crumb "Home", admin_root_path
     end
@@ -257,7 +257,7 @@ module Admin
 end
 
 module Storefront
-  class Breadcrumbs < Gretel::Ngg::Trail
+  class Breadcrumbs < GretelX::Trail
     def categories
       crumb "Shop", storefront_root_url
     end

@@ -2,14 +2,14 @@
 # frozen_string_literal: true
 
 require "optparse"
-require "gretel/ngg/converter"
-require "gretel/ngg/derived_call_sites"
+require "gretelx/converter"
+require "gretelx/derived_call_sites"
 
 namespace = nil
 output_path = nil
 view_directories = []
 parser = OptionParser.new do |options|
-  options.banner = "Usage: gretel-ngg-convert [BREADCRUMBS_FILE...] [--namespace Admin] [--output PATH] [--views DIR]"
+  options.banner = "Usage: gretelx-convert [BREADCRUMBS_FILE...] [--namespace Admin] [--output PATH] [--views DIR]"
   options.on("--namespace NAME", "Module of the Breadcrumbs class: Admin writes Admin::Breadcrumbs") do |name|
     namespace = name
   end
@@ -24,15 +24,15 @@ begin
   abort parser.help if paths.empty? && view_directories.empty?
 
   if paths.any?
-    result = Gretel::Ngg::Converter.call(paths.to_h { |path| [path, File.read(path)] }, namespace:)
+    result = GretelX::Converter.call(paths.to_h { |path| [path, File.read(path)] }, namespace:)
     output_path ? File.write(output_path, result.ruby) : $stdout.write(result.ruby)
     warn "Not converted, or converted with a loss:" if result.notes.any?
     result.notes.each { |note| warn "  #{note}" }
   end
 
-  call_sites = Gretel::Ngg::DerivedCallSites.call(*view_directories)
+  call_sites = GretelX::DerivedCallSites.call(*view_directories)
   warn "Calls a derived trail may now cover, to review by hand:" if call_sites.any?
   call_sites.each { |call_site| warn "  #{call_site}" }
 rescue OptionParser::ParseError, ArgumentError, SystemCallError => exception
-  abort "gretel-ngg-convert: #{exception.message}"
+  abort "gretelx-convert: #{exception.message}"
 end

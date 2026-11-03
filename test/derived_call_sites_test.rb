@@ -2,7 +2,7 @@
 
 require "test_helper"
 require "tmpdir"
-require "gretel/ngg/derived_call_sites"
+require "gretelx/derived_call_sites"
 
 class DerivedCallSitesTest < ActiveSupport::TestCase
   VIEWS = {
@@ -23,7 +23,7 @@ class DerivedCallSitesTest < ActiveSupport::TestCase
         File.write("#{directory}/#{path}", content)
       end
 
-      call_sites = Gretel::Ngg::DerivedCallSites.call(directory).map { |call_site| call_site.to_s.delete_prefix("#{directory}/") }
+      call_sites = GretelX::DerivedCallSites.call(directory).map { |call_site| call_site.to_s.delete_prefix("#{directory}/") }
 
       assert_equal [
         "customers/show.html.erb:1: breadcrumb :customer, @customer (show derives the crumb of @customer)",
