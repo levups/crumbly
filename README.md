@@ -30,7 +30,7 @@ Gretel NGG keeps gretel's good idea (a crumb names its parent) and changes the r
 gem "gretel-ngg"
 ```
 
-The railtie adds `breadcrumb` and `breadcrumb_trail` to your views, and `breadcrumbs_with` to your controllers.
+The railtie adds `breadcrumb`, `breadcrumb_trail` and `breadcrumb_json_ld` to your views, and `breadcrumbs_with` to your controllers.
 
 ## Usage
 
@@ -272,9 +272,51 @@ module Storefront
 end
 ```
 
+`breadcrumb_json_ld` renders the same trail as a schema.org `BreadcrumbList`, the structured data Google reads
+for its breadcrumb rich result:
+
+```erb
+<%# app/views/layouts/storefront.html.erb, in <head> %>
+<%= breadcrumb_json_ld %>
+```
+
+- Positions start at 1, and the current level may have no URL. A level above it without a URL is not a page,
+  so it is left out.
+- A name is plain text: an `html_safe` label (an icon, a `<b>`) has its markup stripped and its entities decoded.
+- The JSON is escaped for a `<script>` tag, so a label cannot close it.
+- Google only takes absolute URLs: a relative one raises `Gretel::Ngg::RelativeUrl` in development and test.
+  In production it is reported and the page renders without a `BreadcrumbList`. Set
+  `Gretel::Ngg.raise_on_relative_url` to choose.
+- `Gretel::Ngg::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
+  structured data.
+
+## Performance
+
+`bench/render.rb` renders the same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) with
+gretel and with Gretel NGG, and checks that both produce the same output. The `<ol>` is gretel's
+`breadcrumbs(style: :ol)` against a ten-line helper over `breadcrumb_trail`. The JSON-LD is gretel's
+`structured_data(url_base:)` (paths behind a prefix) against `breadcrumb_json_ld` (`_url` helpers), both
+encoded and escaped the same way.
+
+Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three runs of benchmark-ips:
+
+| Render | Allocations | Time, YJIT off | Time, YJIT on |
+|---|---|---|---|
+| gretel `<ol>` | 345 | 57.6 µs | 35.1 µs |
+| Gretel NGG `<ol>` | 274 | 45.4 µs | 29.8 µs |
+| gretel JSON-LD | 268 | 41.3 µs | 25.4 µs |
+| Gretel NGG JSON-LD | 287 | 43.3 µs | 29.5 µs |
+
+Most of the JSON-LD gap comes from Rails' `_url` helpers, which are slower than `_path` ones: building the
+`BreadcrumbList` from the levels accounts for 1.7 µs of it.
+
+```sh
+bundle exec ruby bench/render.rb
+bundle exec ruby --yjit bench/render.rb
+```
+
 ## Roadmap
 
-- A JSON-LD `BreadcrumbList` helper for storefronts.
 - A codemod from gretel's `config/breadcrumbs.rb`.
 
 ## Requirements

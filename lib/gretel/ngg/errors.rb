@@ -11,5 +11,7 @@ module Gretel
     class MissingTrail < Error; end
 
     class InvalidTrail < Error; end
+
+    class RelativeUrl < Error; end
   end
 end

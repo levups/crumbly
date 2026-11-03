@@ -32,6 +32,7 @@ ROUTES.draw do
   namespace :storefront do
     root "home#show"
     resources :categories, only: :show
+    get "search", to: "search#show"
   end
 end
 
@@ -264,6 +265,16 @@ module Storefront
     def category(category)
       crumb category.name, storefront_category_url(category),
         parent: category.parent ? category(category.parent) : categories
+    end
+
+    def search(query)
+      crumb "Search: #{query}", storefront_search_url(q: query), parent: categories
+    end
+  end
+
+  class SearchController < ApplicationController
+    def show
+      render inline: "<% breadcrumb :search, params[:q] %><%= breadcrumb_json_ld %>"
     end
   end
 

@@ -20,6 +20,13 @@ module Gretel
           end
         end
       end
+
+      def breadcrumb_json_ld
+        breadcrumb_list = JsonLd.call(breadcrumb_trail)
+        return unless breadcrumb_list
+
+        content_tag(:script, ERB::Util.json_escape(JSON.generate(breadcrumb_list)).html_safe, type: "application/ld+json")
+      end
     end
   end
 end

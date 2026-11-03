@@ -12,6 +12,7 @@ require_relative "ngg/errors"
 require_relative "ngg/crumb"
 require_relative "ngg/level"
 require_relative "ngg/trail"
+require_relative "ngg/json_ld"
 require_relative "ngg/controller"
 require_relative "ngg/view_helpers"
 require_relative "ngg/verifier"
@@ -20,7 +21,7 @@ require_relative "ngg/railtie" if defined?(Rails::Railtie)
 module Gretel
   module Ngg
     class << self
-      attr_writer :routes, :raise_on_unknown_crumb
+      attr_writer :routes, :raise_on_unknown_crumb, :raise_on_relative_url
 
       def routes
         @routes || (Rails.application&.routes if defined?(Rails.application))
@@ -29,7 +30,13 @@ module Gretel
       def raise_on_unknown_crumb?
         return @raise_on_unknown_crumb unless @raise_on_unknown_crumb.nil?
 
-        !(defined?(Rails.env) && Rails.env.production?)
+        !production?
+      end
+
+      def raise_on_relative_url?
+        return @raise_on_relative_url unless @raise_on_relative_url.nil?
+
+        !production?
       end
 
       # Raises InvalidTrail with every problem found, and returns the dead crumbs ("Admin::Breadcrumbs#drafts").
@@ -63,6 +70,10 @@ module Gretel
         return [] unless defined?(Rails.root) && Rails.root
 
         [Rails.root.join("app/views"), Rails.root.join("app/controllers")]
+      end
+
+      def production?
+        defined?(Rails.env) && Rails.env.production?
       end
     end
   end
