@@ -244,6 +244,31 @@ for its breadcrumb rich result:
 - `Gretel::Ngg::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
   structured data.
 
+## Performance
+
+`bench/render.rb` renders the same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) with
+gretel and with Gretel NGG, and checks that both produce the same output. The `<ol>` is gretel's
+`breadcrumbs(style: :ol)` against a ten-line helper over `breadcrumb_trail`. The JSON-LD is gretel's
+`structured_data(url_base:)` (paths behind a prefix) against `breadcrumb_json_ld` (`_url` helpers), both
+encoded and escaped the same way.
+
+Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three runs of benchmark-ips:
+
+| Render | Allocations | Time, YJIT off | Time, YJIT on |
+|---|---|---|---|
+| gretel `<ol>` | 345 | 57.6 µs | 35.1 µs |
+| Gretel NGG `<ol>` | 274 | 45.4 µs | 29.8 µs |
+| gretel JSON-LD | 268 | 41.3 µs | 25.4 µs |
+| Gretel NGG JSON-LD | 287 | 43.3 µs | 29.5 µs |
+
+Most of the JSON-LD gap comes from Rails' `_url` helpers, which are slower than `_path` ones: building the
+`BreadcrumbList` from the levels accounts for 1.7 µs of it.
+
+```sh
+bundle exec ruby bench/render.rb
+bundle exec ruby --yjit bench/render.rb
+```
+
 ## Roadmap
 
 - Nested routes in derived trails (`/orders/42/messages` → Messages under Order 42), with the order of
