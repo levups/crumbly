@@ -2,7 +2,7 @@
 
 Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests.
 
-Guide, migration from gretel, breadcrumbs_on_rails and loaf: [next-gen-gems.github.io/gretelx](https://next-gen-gems.github.io/gretelx/)
+<https://next-gen-gems.github.io/gretelx/>: guide, migration from gretel, breadcrumbs_on_rails and loaf, benchmarks.
 
 [gretel](https://github.com/kzkn/gretel) works, but on a real back office (one file of about 1,000 lines,
 265 crumbs, 380 call sites), its shape is what hurts:
@@ -296,31 +296,6 @@ for its breadcrumb rich result:
 - `GretelX::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
   structured data.
 
-## Performance
-
-`bench/render.rb` renders the same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) with
-gretel and with GretelX, and checks that both produce the same output. The `<ol>` is gretel's
-`breadcrumbs(style: :ol)` against a ten-line helper over `breadcrumb_trail`. The JSON-LD is gretel's
-`structured_data(url_base:)` (paths behind a prefix) against `breadcrumb_json_ld` (`_url` helpers), both
-encoded and escaped the same way.
-
-Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three runs of benchmark-ips:
-
-| Render | Allocations | Time, YJIT off | Time, YJIT on |
-|---|---|---|---|
-| gretel `<ol>` | 345 | 57.6 µs | 35.1 µs |
-| GretelX `<ol>` | 274 | 45.4 µs | 29.8 µs |
-| gretel JSON-LD | 268 | 41.3 µs | 25.4 µs |
-| GretelX JSON-LD | 287 | 43.3 µs | 29.5 µs |
-
-Most of the JSON-LD gap comes from Rails' `_url` helpers, which are slower than `_path` ones: building the
-`BreadcrumbList` from the levels accounts for 1.7 µs of it.
-
-```sh
-bundle exec ruby bench/render.rb
-bundle exec ruby --yjit bench/render.rb
-```
-
 ## Migrating from gretel
 
 An app switches in one go: there is no compatibility layer, and the two gems do not run side by side in
@@ -389,6 +364,40 @@ Drop gretel and `config/breadcrumbs.rb`, and render `breadcrumb_trail` in the la
 
 Ruby 3.3 or later, and Rails 8.0 or later (Action Pack and Active Support).
 
+## Performance
+
+`bench/render.rb` renders the same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) with
+gretel and with GretelX, and checks that both produce the same output. The `<ol>` is gretel's
+`breadcrumbs(style: :ol)` against a ten-line helper over `breadcrumb_trail`. The JSON-LD is gretel's
+`structured_data(url_base:)` (paths behind a prefix) against `breadcrumb_json_ld` (`_url` helpers), both
+encoded and escaped the same way.
+
+Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three runs of benchmark-ips:
+
+| Render | Allocations | Time, YJIT off | Time, YJIT on |
+|---|---|---|---|
+| gretel `<ol>` | 345 | 57.6 µs | 35.1 µs |
+| GretelX `<ol>` | 274 | 45.4 µs | 29.8 µs |
+| gretel JSON-LD | 268 | 41.3 µs | 25.4 µs |
+| GretelX JSON-LD | 287 | 43.3 µs | 29.5 µs |
+
+Most of the JSON-LD gap comes from Rails' `_url` helpers, which are slower than `_path` ones: building the
+`BreadcrumbList` from the levels accounts for 1.7 µs of it.
+
+```sh
+bundle exec ruby bench/render.rb
+bundle exec ruby --yjit bench/render.rb
+```
+
+## Development
+
+```sh
+bundle install
+bundle exec rake test
+bundle exec rubocop
+```
+
 ## License
 
-MIT, by Level UP Solutions.
+MIT, by Level UP Solutions. GretelX keeps the idea of [gretel](https://github.com/kzkn/gretel), by Lasse Bunk and
+Kazuki Nishikawa: a crumb names its parent.
