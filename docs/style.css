@@ -12,7 +12,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--ground); color: var(--ink); font: 400 1.0625rem/1.6 "Inter Tight", system-ui, sans-serif; }
 code, pre { font-family: "Fira Code", ui-monospace, monospace; font-size: 0.9em; font-variant-ligatures: none; }
-p code, li code, td code { background: var(--surface); padding: 0.05em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
+p code, li code, td code, th code { background: var(--surface); padding: 0.05em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
 a { color: var(--cobalt); text-underline-offset: 0.2em; }
 a:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
 pre { margin: 0; padding: 0.9rem 1rem; background: var(--surface); border-radius: 4px; overflow-x: auto; line-height: 1.55; }
@@ -69,12 +69,10 @@ h3 { font-size: 1.15rem; margin: 2rem 0 0.75rem; }
 table { border-collapse: collapse; margin: 0.5rem 0 1.5rem; width: 100%; }
 th, td { text-align: left; padding: 0.4rem 1rem 0.4rem 0; border-bottom: 1px solid var(--rail); vertical-align: top; }
 th { font-size: 0.875rem; color: var(--muted); font-weight: 600; }
+tbody th { font-size: inherit; color: var(--ink); font-weight: 400; }
+caption { caption-side: top; text-align: left; padding-bottom: 0.4rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
 .options { max-width: 64rem; }
 .options td:first-child { white-space: nowrap; }
 @media (max-width: 40rem) { .options td:first-child { white-space: normal; } .options td { overflow-wrap: anywhere; } }
-
-.placeholder { max-width: var(--measure); border: 1px dashed var(--rail); border-radius: 4px; background: var(--surface); padding: 1.25rem; }
-.placeholder p { margin: 0 0 0.75rem; }
-.placeholder p:last-child { margin-bottom: 0; }
 
 footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--rail); color: var(--muted); font-size: 0.9375rem; display: flex; gap: 1.5rem; flex-wrap: wrap; }

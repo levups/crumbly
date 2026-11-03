@@ -30,7 +30,7 @@
     <header class="hero">
       <h1 class="wordmark"><span>Gretel</span><span>X</span></h1>
       <div>
-        <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">Namespaced, derived from your routes, checked early.</span></p>
+        <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">Namespaced, derived from your routes, checked in tests.</span></p>
         <p class="summary">One class of plain Ruby methods per namespace. A view that names no crumb gets the trail of its action. The trail comes back as data, and your own component renders it.</p>
         <code class="install">gem "gretelx"</code>
         <p class="links"><a href="guide.html">Get started</a><a href="migration.html">Migrating from gretel, breadcrumbs_on_rails or loaf</a></p>
@@ -66,7 +66,7 @@
         </div>
         <div class="card">
           <h3>Derived by default</h3>
-          <p>A view that names no crumb gets the trail of its action, built from the routes and the record its controller already loaded.</p>
+          <p>A view that names no crumb gets the trail of its action, built from the routes and the record its controller already loaded, nested routes included.</p>
           <p><a href="guide.html#derived">Derived trails</a></p>
         </div>
         <div class="card">
@@ -75,9 +75,24 @@
           <p><a href="guide.html#errors">Errors</a></p>
         </div>
         <div class="card">
+          <h3>Checked in tests</h3>
+          <p>One <code>assert_breadcrumbs_valid</code> reads every crumb with Prism: unknown parents and route helpers, view calls to missing crumbs, and dead crumbs fail the test, without loading a record.</p>
+          <p><a href="guide.html#tests">Checked in tests</a></p>
+        </div>
+        <div class="card">
           <h3>Data, not HTML</h3>
           <p><code>breadcrumb_trail</code> returns levels (label, URL, extra links, <code>current?</code>). No styles, no renderer options: your component decides the markup.</p>
           <p><a href="guide.html#rendering">Rendering</a></p>
+        </div>
+        <div class="card">
+          <h3>JSON-LD for storefronts</h3>
+          <p><code>breadcrumb_json_ld</code> renders the same trail as a schema.org <code>BreadcrumbList</code>; a relative URL raises in development and test, before Google ever reads it.</p>
+          <p><a href="guide.html#storefronts">Storefronts</a></p>
+        </div>
+        <div class="card">
+          <h3>A codemod from gretel</h3>
+          <p><code>gretelx-convert</code> turns <code>config/breadcrumbs.rb</code> into a trail class, and a test compares the trails both gems draw before gretel goes.</p>
+          <p><a href="migration.html#gretel">From gretel</a></p>
         </div>
       </div>
     </section>
