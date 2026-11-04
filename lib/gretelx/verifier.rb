@@ -41,15 +41,20 @@ module GretelX
       definition = definition_of(method)
       return unless definition
 
-      receiverless_calls(definition).each do |name, line|
+      receiverless_calls(definition).each do |call|
+        name = call.name
+        location = "#{method.source_location.first}:#{call.location.start_line}"
+        if trail_class.crumb?(name)
+          arity_problem = arity_problem(trail_class, name, call)
+          problems << "#{trail_class}##{method.name} calls #{name} #{arity_problem} (#{location})" if arity_problem
+        end
         next if name == method.name
 
         called_names << name
         next if trail_class.method_defined?(name) || trail_class.private_method_defined?(name)
 
         kind = ROUTE_HELPER.match?(name) ? "a route helper" : "a crumb"
-        problems << "#{trail_class}##{method.name} calls #{name}, which is not #{kind} " \
-                    "(#{method.source_location.first}:#{line})"
+        problems << "#{trail_class}##{method.name} calls #{name}, which is not #{kind} (#{location})"
       end
     end
 
@@ -71,9 +76,7 @@ module GretelX
 
     def receiverless_calls(definition)
       calls = []
-      each_node(definition) do |node|
-        calls << [node.name, node.location.start_line] if node.is_a?(Prism::CallNode) && node.receiver.nil?
-      end
+      each_node(definition) { |node| calls << node if node in Prism::CallNode[receiver: nil] }
       calls
     end
 
@@ -86,15 +89,67 @@ module GretelX
       defined_names = trail_classes.flat_map { |trail_class| crumb_names(trail_class) }.to_set
       source_files.each do |path|
         File.foreach(path).with_index(1) do |line, number|
-          line.scan(BREADCRUMB_CALL) do |symbol, string, instance_variable|
+          line.to_enum(:scan, BREADCRUMB_CALL).each do
+            match = Regexp.last_match
+            symbol, string, instance_variable = match.captures
             name = (symbol || string || instance_variable).to_sym
             called_names << name
-            next if instance_variable || defined_names.include?(name)
+            next if instance_variable
 
-            problems << "#{path}:#{number} calls breadcrumb :#{name}, which no trail defines"
+            unless defined_names.include?(name)
+              problems << "#{path}:#{number} calls breadcrumb :#{name}, which no trail defines"
+              next
+            end
+            call = breadcrumb_call(line[match.begin(0)..])
+            arity_problem = call && arity_problem(trail_classes, name, call)
+            problems << "#{path}:#{number} calls breadcrumb :#{name} #{arity_problem}" if arity_problem
           end
         end
       end
+    end
+
+    # The call as Ruby, when the rest of its line parses: `breadcrumb :order, @order %>` in ERB, but not a
+    # call spread over several lines, whose arguments are left unchecked.
+    def breadcrumb_call(source)
+      parse_result = Prism.parse(source.sub(/\s*-?%>.*\z/m, ""))
+      return if parse_result.failure?
+
+      each_node(parse_result.value) do |node|
+        return node if node in Prism::CallNode[receiver: nil, name: :breadcrumb]
+      end
+      nil
+    end
+
+    # gretel ran a crumb as a block, which took any number of arguments; a crumb method raises ArgumentError.
+    def arity_problem(trail_classes, name, call)
+      arguments = call.arguments&.arguments || []
+      arguments = arguments.drop(1) if call.name == :breadcrumb
+      return if arguments.any? { |argument| argument in Prism::SplatNode | Prism::KeywordHashNode | Prism::ForwardingArgumentsNode }
+
+      crumb_methods = Array(trail_classes).filter_map do |trail_class|
+        trail_class.instance_method(name) if trail_class.crumb?(name)
+      end
+      return if crumb_methods.any? { |crumb_method| accepts?(crumb_method, arguments.size) }
+
+      "with #{arguments.size} #{"argument".pluralize(arguments.size)}, which takes #{arity(crumb_methods.first)}"
+    end
+
+    def accepts?(crumb_method, count)
+      required, optional, rest = parameter_counts(crumb_method)
+      count >= required && (rest || count <= required + optional)
+    end
+
+    def arity(crumb_method)
+      required, optional, rest = parameter_counts(crumb_method)
+      if rest then "#{required} or more"
+      elsif optional.zero? then required.to_s
+      else "#{required} to #{required + optional}"
+      end
+    end
+
+    def parameter_counts(crumb_method)
+      kinds = crumb_method.parameters.map(&:first)
+      [kinds.count(:req), kinds.count(:opt), kinds.include?(:rest)]
     end
 
     def source_files
