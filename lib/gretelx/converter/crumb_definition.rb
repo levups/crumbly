@@ -13,11 +13,36 @@ module GretelX
       NIL_TOLERANT_CALLS = %i[! nil? present? blank? presence].freeze
       SINGLE_LINE_LENGTH = 90
 
+      # A local assigned outside the crumbs. A lambda at the top of the file becomes a private method of the
+      # Trail: `label.call(post)` reads `label(post)`.
+      Local = Data.define(:node, :source) do
+        def helper_method?
+          source.expansion_description.nil? && !function.nil?
+        end
+
+        def method_lines
+          parameters = function.parameters&.parameters&.slice
+          body = function.body ? source.fragment(function.body, []).split("\n") : []
+          [parameters ? "def #{node.name}(#{parameters})" : "def #{node.name}", *body.map { |line| "  #{line}" }, "end"]
+        end
+
+        private
+
+        def function
+          case node.value
+          in Prism::LambdaNode => lambda then lambda
+          in Prism::CallNode[receiver: nil, name: :lambda | :proc, block: Prism::BlockNode => block] then block
+          else nil
+          end
+        end
+      end
+
       attr_reader :key, :line, :notes
 
-      def initialize(call, source)
+      def initialize(call, source, local_by_name: {})
         @call = call
         @source = source
+        @local_by_name = local_by_name
         @line = call.location.start_line
         @notes = []
         @copied_ranges = []
@@ -27,14 +52,70 @@ module GretelX
       end
 
       def lines
-        body = body_lines(statements_of(block.body), [], nil)
+        body = copied_local_lines + body_lines(statements_of(block.body), [], nil)
         signature = parameters_source.empty? ? "def #{key}" : "def #{key}(#{parameters_source})"
         [*loose_comments, signature, *indent(body), "end"]
       end
 
       private
 
-      attr_reader :call, :source, :block, :copied_ranges
+      attr_reader :call, :source, :block, :copied_ranges, :local_by_name
+
+      # The locals assigned outside the block that it reads, and those they read, in the order of the file. A
+      # literal is written in place instead (`path = :posts_path` makes `public_send(path)` read `posts_path`).
+      def copied_local_lines
+        names = read_names(block) - block.locals
+        loop do
+          more_names = names.flat_map { |name| read_names(local_by_name[name]&.node&.value) } - names
+          more_names &= local_by_name.keys
+          break if more_names.empty?
+
+          names += more_names
+        end
+        copied_locals = local_by_name.slice(*local_by_name.keys.intersection(names)).values
+        copied_locals.reject { |local| local.helper_method? || literal?(local.node.value) }.flat_map do |local|
+          local.source.fragment(local.node, helper_edits(local.node)).split("\n")
+        end
+      end
+
+      def helper_method_call(node)
+        return unless node in Prism::CallNode[name: :call | :[], receiver: Prism::LocalVariableReadNode => receiver]
+        return if block.locals.include?(receiver.name)
+
+        receiver.name if local_by_name[receiver.name]&.helper_method?
+      end
+
+      def helper_method_edits(call, name, edits)
+        arguments = call.arguments&.arguments || []
+        if call.opening_loc
+          edits << [call.location.start_offset, call.opening_loc.end_offset, "#{name}("]
+          edits << [call.closing_loc.start_offset, call.closing_loc.end_offset, ")"]
+        elsif arguments.empty?
+          return edits << [call.location.start_offset, call.location.end_offset, name.to_s]
+        else
+          edits << [call.location.start_offset, arguments.first.location.start_offset, "#{name}("]
+          edits << [call.location.end_offset, call.location.end_offset, ")"]
+        end
+        arguments.each { |argument| helper_edits(argument, edits) }
+        edits
+      end
+
+      def literal?(node)
+        Converter::STATIC_NODES.any? { |node_class| node.is_a?(node_class) }
+      end
+
+      def inlined_literal(node)
+        return unless node.is_a?(Prism::LocalVariableReadNode) && !block.locals.include?(node.name)
+
+        value = local_by_name[node.name]&.node&.value
+        value if value && literal?(value)
+      end
+
+      def read_names(node, names = [])
+        names << node.name if node.is_a?(Prism::LocalVariableReadNode) && !names.include?(node.name)
+        node&.compact_child_nodes&.each { |child| read_names(child, names) }
+        names
+      end
 
       def crumb_key
         argument = call.arguments&.arguments&.first
@@ -183,6 +264,7 @@ module GretelX
         raise unconvertible("crumb :#{key} reads its parent instead of setting it: left out", call) if arguments.empty?
 
         target, *rest = arguments
+        target = inlined_literal(target) || target
         rest = rest.map { |argument| fragment(argument) }
         case target
         in Prism::SymbolNode | Prism::StringNode
@@ -264,8 +346,20 @@ module GretelX
       end
 
       def helper_edits(node, edits = [])
+        if (literal = inlined_literal(node))
+          return edits << [node.location.start_offset, node.location.end_offset, literal.slice]
+        end
+        if (helper_method = helper_method_call(node))
+          return helper_method_edits(node, helper_method, edits)
+        end
         if (method_name = static_send_name(node))
-          return edits << [node.location.start_offset, node.location.end_offset, method_name]
+          arguments = node.arguments.arguments.drop(1)
+          return edits << [node.location.start_offset, node.location.end_offset, method_name] if arguments.empty?
+
+          edits << [node.location.start_offset, arguments.first.location.start_offset, "#{method_name}("]
+          edits << [node.location.end_offset, node.location.end_offset, ")"] unless node.opening_loc
+          arguments.each { |argument| helper_edits(argument, edits) }
+          return edits
         end
         if node.is_a?(Prism::CallNode) && view_helper_call?(node)
           edits << [node.location.start_offset, node.location.start_offset, "helpers."]
@@ -274,12 +368,16 @@ module GretelX
         edits
       end
 
-      # `send("admin_#{name}_path")` in a loop reads `admin_posts_path` once the loop is expanded.
+      # `send("admin_#{name}_path", post)` in a loop reads `admin_posts_path(post)` once the loop is expanded.
       def static_send_name(node)
         return unless node in Prism::CallNode[receiver: nil, name: :send | :public_send, block: nil,
-          arguments: {arguments: [Prism::StringNode | Prism::SymbolNode => name]}]
+          arguments: {arguments: [target, *]}]
 
-        name.unescaped if name.unescaped.end_with?("_path", "_url") && name.unescaped.match?(/\A[a-z_][a-z0-9_]*\z/)
+        target = inlined_literal(target) || target
+        return unless target in Prism::StringNode | Prism::SymbolNode
+
+        name = target.unescaped
+        name if name.end_with?("_path", "_url") && name.match?(/\A[a-z_][a-z0-9_]*\z/)
       end
 
       def view_helper_call?(call)

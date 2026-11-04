@@ -141,6 +141,59 @@ class ConverterTest < ActiveSupport::TestCase
     GRETEL
   end
 
+  test "a loop may destructure its pairs, and yield constants" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def post_comments(record)
+        crumb Comment.model_name.human, parent: post(record)
+      end
+
+      def order_notes(record)
+        crumb Admin::Note.model_name.human, parent: order(record)
+      end
+    RUBY
+      {post_comments: [:post, Comment], order_notes: [:order, Admin::Note]}.each do |name, (parent_name, model)|
+        crumb name do |record|
+          link model.model_name.human
+          parent parent_name, record
+        end
+      end
+    GRETEL
+  end
+
+  test "a local a crumb reads is copied into its method, a literal written in place, a lambda made a method" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def drafts
+        label = title(:drafts)
+        crumb label, admin_drafts_path, parent: posts
+      end
+
+      def archives
+        label = title(:archives)
+        crumb label, admin_archives_path, parent: posts
+      end
+
+      private
+
+      # Drafts, Archives
+      def title(name)
+        name.to_s.humanize
+      end
+    RUBY
+      # Drafts, Archives
+      title = ->(name) { name.to_s.humanize }
+      parent_name = :posts
+
+      %i[drafts archives].each do |name|
+        path = :"admin_\#{name}_path"
+        label = title.call(name)
+        crumb name do
+          link label, public_send(path)
+          parent parent_name
+        end
+      end
+    GRETEL
+  end
+
   test "a crumb a Trail cannot hold is listed, with the line inside its loop" do
     result = GretelX::Converter.call({"breadcrumbs.rb" => <<~GRETEL})
       %i[display orders].each do |name|

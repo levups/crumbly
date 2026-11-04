@@ -34,7 +34,7 @@ module GretelX
 
     STATIC_NODES = [
       Prism::SymbolNode, Prism::StringNode, Prism::IntegerNode, Prism::FloatNode,
-      Prism::NilNode, Prism::TrueNode, Prism::FalseNode
+      Prism::NilNode, Prism::TrueNode, Prism::FalseNode, Prism::ConstantReadNode, Prism::ConstantPathNode
     ].freeze
     LoopValue = Data.define(:source, :text)
 
@@ -52,6 +52,7 @@ module GretelX
       @entries = []
       @definition_by_key = {}
       @notes = []
+      @helper_methods = []
     end
 
     def call
@@ -66,25 +67,30 @@ module GretelX
 
     private
 
-    attr_reader :source_by_path, :namespace, :entries, :definition_by_key, :notes
+    attr_reader :source_by_path, :namespace, :entries, :definition_by_key, :notes, :helper_methods
 
-    def convert_statements(statements, source)
+    # A crumb becomes a method, which cannot see the locals assigned around it: each one it reads is copied in.
+    def convert_statements(statements, source, local_by_name = {})
       previous_end_offset = source.start_offset
       statements.each do |statement|
         comments = source.comment_lines(previous_end_offset, statement.location.start_offset)
         previous_end_offset = statement.location.end_offset
-        convert_statement(statement, source, comments)
+        convert_statement(statement, source, comments, local_by_name)
       rescue Unconvertible => exception
         note(source, exception.line, exception.message)
       end
     end
 
-    def convert_statement(statement, source, comments)
+    def convert_statement(statement, source, comments, local_by_name)
       if crumb_call?(statement)
-        define(CrumbDefinition.new(statement, source), source, comments)
+        define(CrumbDefinition.new(statement, source, local_by_name:), source, comments)
+      elsif statement.is_a?(Prism::LocalVariableWriteNode)
+        local = CrumbDefinition::Local.new(node: statement, source:)
+        helper_methods << comments + local.method_lines if local.helper_method?
+        local_by_name[statement.name] = local
       elsif loop_call?(statement)
         entries << comments if comments.any?
-        expand_loop(statement, source)
+        expand_loop(statement, source, local_by_name)
       else
         raise Unconvertible.new("not a crumb definition, left out: #{summary(statement)}",
           statement.location.start_line)
@@ -115,66 +121,84 @@ module GretelX
       entries << definition
     end
 
-    def expand_loop(call, source)
+    def expand_loop(call, source, local_by_name)
       block = call.block
-      names = loop_parameter_names(block)
-      unless names
+      parameters = loop_parameters(block)
+      unless parameters
         raise Unconvertible.new("crumbs defined in a loop whose block takes #{block.parameters&.slice.inspect}: " \
                                 "left out, write them by hand", call.location.start_line)
       end
 
-      values_list = literal_values(call.receiver, names.size, call.name)
-      unless values_list
+      bindings = literal_bindings(call.receiver, parameters, call.name)
+      unless bindings
         raise Unconvertible.new("crumbs defined in a loop over #{summary(call.receiver)}, which is not a literal: " \
                                 "left out, write them by hand", call.location.start_line)
       end
 
       start_offset = block.parameters ? block.parameters.location.end_offset : block.opening_loc.end_offset
-      values_list.each do |values|
-        value_by_name = names.zip(values).to_h
+      bindings.each do |value_by_name|
         text = source.rewrite(start_offset, block.closing_loc.start_offset, substitutions(block.body, value_by_name))
         expansion = value_by_name.map { |name, value| "#{name} = #{value.source}" }.join(", ")
-        expanded_source = source.expansion(text, start_offset, expansion)
-        convert_statements(expanded_source.statements, expanded_source)
+        expanded_source = source.expansion(text, start_offset, expansion, local_by_name.keys)
+        convert_statements(expanded_source.statements, expanded_source, local_by_name.dup)
       end
     end
 
-    def loop_parameter_names(block)
+    # A parameter destructured by the block (`|name, (parent, label)|`) is an array of names.
+    def loop_parameters(block)
       parameters = block.parameters&.parameters
       return unless parameters in {optionals: [], rest: nil, posts: [], keywords: [], keyword_rest: nil, block: nil}
-      return unless parameters.requireds.all?(Prism::RequiredParameterNode)
 
-      parameters.requireds.map(&:name)
+      parameters.requireds.map { |parameter| loop_parameter(parameter) || (return nil) }
     end
 
-    def literal_values(collection, arity, method_name)
+    def loop_parameter(parameter)
+      case parameter
+      when Prism::RequiredParameterNode then parameter.name
+      when Prism::MultiTargetNode
+        return unless parameter.rest.nil? && parameter.rights.empty?
+
+        parameter.lefts.map { |left| loop_parameter(left) || (return nil) }
+      end
+    end
+
+    # The value of each parameter, for each element: Ruby splats what the loop yields over several parameters,
+    # or over a single destructured one.
+    def literal_bindings(collection, parameters, method_name)
       collection = collection.receiver while collection.is_a?(Prism::CallNode) && collection.name == :freeze
       return unless static?(collection)
 
+      single_name = parameters.first if parameters.size == 1 && parameters.first.is_a?(Symbol)
       case collection
       when Prism::ArrayNode
         return if method_name == :each_pair
 
-        collection.elements.map { |element| element_values(element, arity) || (return nil) }
+        collection.elements.map do |element|
+          next {single_name => loop_value(element)} if single_name
+
+          bind(parameters, element.is_a?(Prism::ArrayNode) ? element.elements : [element])
+        end
       when Prism::HashNode
         collection.elements.map do |association|
-          key = loop_value(association.key)
-          value = loop_value(association.value)
-          case arity
-          when 1 then [LoopValue.new(source: "[#{key.source}, #{value.source}]", text: nil)]
-          when 2 then [key, value]
-          else return nil
-          end
+          pair = [association.key, association.value]
+          next bind(parameters, pair) unless single_name
+
+          {single_name => LoopValue.new(source: "[#{pair.map { |node| loop_value(node).source }.join(", ")}]", text: nil)}
         end
       end
     end
 
-    def element_values(element, arity)
-      return [loop_value(element)] if arity == 1
-      return unless element.is_a?(Prism::ArrayNode)
-
-      values = element.elements.map { |value| loop_value(value) }
-      values.fill(LoopValue.new(source: "nil", text: nil), values.size...arity).first(arity)
+    def bind(parameters, values, value_by_name = {})
+      parameters = parameters.first if parameters.size == 1 && parameters.first.is_a?(Array)
+      parameters.each_with_index do |parameter, index|
+        value = values[index]
+        if parameter.is_a?(Symbol)
+          value_by_name[parameter] = value ? loop_value(value) : LoopValue.new(source: "nil", text: nil)
+        else
+          bind(parameter, value.is_a?(Prism::ArrayNode) ? value.elements : [value].compact, value_by_name)
+        end
+      end
+      value_by_name
     end
 
     def static?(node)
@@ -243,6 +267,10 @@ module GretelX
       ruby = +"# frozen_string_literal: true\n\n"
       modules.each_with_index { |name, index| ruby << "#{"  " * index}module #{name}\n" }
       ruby << "#{"  " * depth}class Breadcrumbs < GretelX::Trail\n"
+      if helper_methods.any?
+        body << "#{"  " * (depth + 1)}private"
+        body.concat(helper_methods.map { |lines| indent(lines, depth + 1).join("\n") })
+      end
       ruby << body.join("\n\n") << "\n" if body.any?
       ruby << "#{"  " * depth}end\n"
       depth.downto(1) { |index| ruby << "#{"  " * (index - 1)}end\n" }

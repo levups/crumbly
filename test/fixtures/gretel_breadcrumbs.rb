@@ -89,3 +89,13 @@ end
 crumb :orders do
   link t("admin.orders", default: "All orders"), admin_orders_path
 end
+
+label_for = ->(label) { label.is_a?(Symbol) ? label.to_s.humanize : label }
+
+{order_notes: [:order, "Internal notes"], order_shipments: [:order, :shipments]}.each do |name, (parent_name, label)|
+  path = :"admin_#{name}_path"
+  crumb name do |order|
+    link label_for.call(label), public_send(path, order)
+    parent parent_name, order
+  end
+end
