@@ -3,8 +3,8 @@
 Breadcrumbs for Rails (gem `gretelx`, module `GretelX`): one `GretelX::Trail` class per namespace, trails derived
 from the routes, checked in tests (`GretelX.verify!`), plus `gretelx-convert` and `GretelX::Oracle` to migrate from
 gretel. By Level UP Solutions, in the next-gen-gems organization. The README is the user documentation, `docs/` the
-GitHub Pages site: keep both in step with the code. A user-visible change goes in an `## Unreleased` section on top
-of `CHANGELOG.md`, added if missing.
+GitHub Pages site: keep both in step with the code. `CHANGELOG.md` is written when releasing (Changelog and
+releases).
 
 ## Compatibility
 
@@ -42,9 +42,14 @@ Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't
 
 ## Changelog and releases
 
-- Every user-visible change adds its line under `## [Unreleased]` in `CHANGELOG.md`, in the same PR. A release
-  opens with a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT) and
-  **Fixed**, only those with entries. No version heading, date or link by hand: `bin/release` writes them.
+- Never edit `CHANGELOG.md` in a PR: any two PRs adding a line there conflict. The changelog is written when
+  releasing, from the PRs merged since the last tag; a PR title says what changes for users.
+- To release, read every PR merged since the last tag (`git log --first-parent --oneline <tag>..origin/main`,
+  squash merges end in `(#n)`, then `gh pr view n`), and write the release under `## [Unreleased]` without
+  committing it: a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT)
+  and **Fixed**, only those with entries. One entry per change users can see, written for them: several PRs may
+  make one, CI, refactoring, docs and tests make none. Show it to the user, then `bin/release` commits it with
+  the version. No version heading, date or link by hand: `bin/release` writes them.
 - `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` (README, Releasing), and
   `.github/workflows/release.yml` publishes it. Both are the same in every next-gen-gems gem: change them in all
   four at once.
