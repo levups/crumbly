@@ -1,0 +1,26 @@
+name: Bug report
+description: A wrong trail, a crumb that should raise and does not, a crash
+labels: [bug]
+body:
+  - type: textarea
+    id: code
+    attributes:
+      label: Trail class, routes and view
+      description: The smallest breadcrumbs class, routes and view call that reproduce it.
+      render: ruby
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual trail
+      description: The trail you expected, what `breadcrumb_trail` returned instead, or the error and its backtrace.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: GretelX 1.0.0 (or commit), Rails 8.1, Ruby 4.0.1
+    validations:
+      required: true

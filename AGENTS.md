@@ -35,3 +35,7 @@ Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's Gemfile list.
   and `docs/benchmarks.html` come from the same run. A pure performance change never pins internals in tests.
 - Test and bench data stay generic (`Alice`, `Order 2026-0042`, `example.com`).
 - `.claude/hooks/rubocop.sh` autocorrects each Ruby file after an edit.
+
+## Code style
+
+Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't settle.
