@@ -319,6 +319,7 @@ files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crum
 | `parent :other, order` | `parent: other(order)` |
 | `parent record` | `parent: crumb_for(record)` |
 | `parent :a` and `parent :b` in an `if`/`else` | `parent: condition ? a : b` |
+| `parent :a`, then `parent :b if condition` | `parent: condition ? b : a` |
 | `link` and `parent` inside a final `if`, `elsif`, `unless` | one `crumb` call per branch |
 | `t(".x")`, `current_user`: view helpers | `helpers.t(".x")`, `helpers.current_user`; route helpers stay bare |
 | `%i[a b].each { \|name\| crumb name do ... end }`, `{a: [:post, Comment]}.each { \|name, (parent, model)\| ... }` | one method per element |
