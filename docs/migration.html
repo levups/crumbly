@@ -63,7 +63,7 @@
             <tr><td><code>t(".x")</code>, <code>current_user</code>: view helpers</td><td><code>helpers.t(".x")</code>, <code>helpers.current_user</code>; route helpers stay bare</td></tr>
             <tr><td><code>%i[a b].each { |name| crumb name do ... end }</code>, <code>{a: [:post, Comment]}.each { |name, (parent, model)| ... }</code></td><td>one method per element</td></tr>
             <tr><td>a local assigned before a crumb reads it: <code>path = :"admin_#{name}_path"</code></td><td>copied into each crumb reading it, a literal written in place</td></tr>
-            <tr><td><code>label = -&gt;(record) { ... }</code> at the top of the file</td><td>a private method, <code>label.call(post)</code> becoming <code>label(post)</code></td></tr>
+            <tr><td><code>label = -&gt;(record) { ... }</code> at the top of the file, reading no other local</td><td>a private method, <code>label.call(post)</code> becoming <code>label(post)</code></td></tr>
           </tbody>
         </table>
         <p>It lists, without converting them: a loop over anything but a literal array or hash (of symbols, strings, numbers and constants), <code>link</code> or <code>parent</code> anywhere else than at the top of the crumb or in its final conditional, <code>link</code> options (<code>title:</code>, <code>class:</code>), crumbs whose name is a Ruby keyword or an existing method (<code>display</code>, <code>test</code>), and any statement that is not a crumb, a loop or a local. Comments are kept above the method they precede.</p>

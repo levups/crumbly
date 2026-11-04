@@ -13,11 +13,12 @@ module GretelX
       NIL_TOLERANT_CALLS = %i[! nil? present? blank? presence].freeze
       SINGLE_LINE_LENGTH = 90
 
-      # A local assigned outside the crumbs. A lambda at the top of the file becomes a private method of the
-      # Trail: `label.call(post)` reads `label(post)`.
+      # A local assigned outside the crumbs. A lambda at the top of the file that reads no other local becomes a
+      # private method of the Trail: `label.call(post)` reads `label(post)`. A proc keeps its lenient arity as a
+      # copied local.
       Local = Data.define(:node, :source) do
         def helper_method?
-          source.expansion_description.nil? && !function.nil?
+          source.expansion_description.nil? && !function.nil? && (read_names(function.body) - scope_names).empty?
         end
 
         def method_lines
@@ -29,11 +30,24 @@ module GretelX
         private
 
         def function
-          case node.value
+          function = case node.value
           in Prism::LambdaNode => lambda then lambda
-          in Prism::CallNode[receiver: nil, name: :lambda | :proc, block: Prism::BlockNode => block] then block
-          else nil
+          in Prism::CallNode[receiver: nil, name: :lambda, block: Prism::BlockNode => block] then block
+          else return nil
           end
+          function unless function.parameters in Prism::NumberedParametersNode | Prism::ItParametersNode
+        end
+
+        def scope_names(node = function, names = [])
+          names.concat(node.locals) if node in Prism::LambdaNode | Prism::BlockNode
+          node&.compact_child_nodes&.each { |child| scope_names(child, names) }
+          names
+        end
+
+        def read_names(node, names = [])
+          names << node.name if node.is_a?(Prism::LocalVariableReadNode)
+          node&.compact_child_nodes&.each { |child| read_names(child, names) }
+          names
         end
       end
 
@@ -64,7 +78,7 @@ module GretelX
       # The locals assigned outside the block that it reads, and those they read, in the order of the file. A
       # literal is written in place instead (`path = :posts_path` makes `public_send(path)` read `posts_path`).
       def copied_local_lines
-        names = read_names(block) - block.locals
+        names = read_names(block) - shadowed_names
         loop do
           more_names = names.flat_map { |name| read_names(local_by_name[name]&.node&.value) } - names
           more_names &= local_by_name.keys
@@ -80,7 +94,7 @@ module GretelX
 
       def helper_method_call(node)
         return unless node in Prism::CallNode[name: :call | :[], receiver: Prism::LocalVariableReadNode => receiver]
-        return if block.locals.include?(receiver.name)
+        return if shadowed_names.include?(receiver.name)
 
         receiver.name if local_by_name[receiver.name]&.helper_method?
       end
@@ -105,10 +119,22 @@ module GretelX
       end
 
       def inlined_literal(node)
-        return unless node.is_a?(Prism::LocalVariableReadNode) && !block.locals.include?(node.name)
+        return unless node.is_a?(Prism::LocalVariableReadNode) && !shadowed_names.include?(node.name)
 
         value = local_by_name[node.name]&.node&.value
         value if value && literal?(value)
+      end
+
+      # The names the crumb's block, and the blocks inside it, bind themselves: an outer local of that name is
+      # not read there.
+      def shadowed_names
+        @shadowed_names ||= scope_locals(block).uniq
+      end
+
+      def scope_locals(node, names = [])
+        names.concat(node.locals) if node in Prism::LambdaNode | Prism::BlockNode
+        node.compact_child_nodes.each { |child| scope_locals(child, names) }
+        names
       end
 
       def read_names(node, names = [])
@@ -351,6 +377,10 @@ module GretelX
         end
         if (helper_method = helper_method_call(node))
           return helper_method_edits(node, helper_method, edits)
+        end
+        if node.is_a?(Prism::LocalVariableReadNode) && !shadowed_names.include?(node.name) &&
+            local_by_name[node.name]&.helper_method?
+          return edits << [node.location.start_offset, node.location.end_offset, "method(:#{node.name})"]
         end
         if (method_name = static_send_name(node))
           arguments = node.arguments.arguments.drop(1)

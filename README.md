@@ -323,7 +323,7 @@ files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crum
 | `t(".x")`, `current_user`: view helpers | `helpers.t(".x")`, `helpers.current_user`; route helpers stay bare |
 | `%i[a b].each { \|name\| crumb name do ... end }`, `{a: [:post, Comment]}.each { \|name, (parent, model)\| ... }` | one method per element |
 | a local assigned before a crumb reads it: `path = :"admin_#{name}_path"` | copied into each crumb reading it, a literal written in place |
-| `label = ->(record) { ... }` at the top of the file | a private method, `label.call(post)` becoming `label(post)` |
+| `label = ->(record) { ... }` at the top of the file, reading no other local | a private method, `label.call(post)` becoming `label(post)` |
 
 It lists, without converting them: a loop over anything but a literal array or hash (of symbols, strings,
 numbers and constants), `link` or `parent` anywhere else than at the top of the crumb or in its final

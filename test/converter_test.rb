@@ -194,6 +194,43 @@ class ConverterTest < ActiveSupport::TestCase
     GRETEL
   end
 
+  test "a lambda reading other locals, or with numbered parameters, is copied; one read as a value is a method" do
+    result = GretelX::Converter.call({"breadcrumbs.rb" => <<~GRETEL})
+      prefix = "Admin"
+      name = "top"
+      short = -> { _1.to_s }
+      titled = ->(text) { "\#{prefix} \#{text}" }
+      upcased = ->(text) { text.upcase }
+      crumb :tags do |post|
+        link post.tags.map { |name| name.upcase }.join, "/tags"
+        link post.tags.map(&upcased).join
+        link titled.call(short.call(post))
+      end
+      name = "again"
+    GRETEL
+
+    assert_equal <<~RUBY, result.ruby
+      # frozen_string_literal: true
+
+      class Breadcrumbs < GretelX::Trail
+        def tags(post)
+          short = -> { _1.to_s }
+          titled = ->(text) { "\#{"Admin"} \#{text}" }
+          crumb post.tags.map { |name| name.upcase }.join, "/tags",
+            links: [link(post.tags.map(&method(:upcased)).join, nil), link(titled.call(short.call(post)), nil)]
+        end
+
+        private
+
+        def upcased(text)
+          text.upcase
+        end
+      end
+    RUBY
+    assert_equal ["breadcrumbs.rb:11: name is assigned again: a crumb above that reads it gets its first value, " \
+                  "where gretel read the last one"], result.notes.map(&:to_s)
+  end
+
   test "a crumb a Trail cannot hold is listed, with the line inside its loop" do
     result = GretelX::Converter.call({"breadcrumbs.rb" => <<~GRETEL})
       %i[display orders].each do |name|

@@ -85,6 +85,10 @@ module GretelX
       if crumb_call?(statement)
         define(CrumbDefinition.new(statement, source, local_by_name:), source, comments)
       elsif statement.is_a?(Prism::LocalVariableWriteNode)
+        if local_by_name.key?(statement.name)
+          note(source, statement.location.start_line, "#{statement.name} is assigned again: a crumb above that " \
+                                                      "reads it gets its first value, where gretel read the last one")
+        end
         local = CrumbDefinition::Local.new(node: statement, source:)
         helper_methods << comments + local.method_lines if local.helper_method?
         local_by_name[statement.name] = local
