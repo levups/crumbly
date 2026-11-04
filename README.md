@@ -393,7 +393,8 @@ bundle exec ruby --yjit bench/render.rb
 
 ```sh
 bundle install
-bundle exec rake test
+bundle exec rake test                                            # latest Rails
+BUNDLE_GEMFILE=gemfiles/rails_8_0.gemfile bundle exec rake test  # Rails 8.0
 bundle exec rubocop
 ```
 
