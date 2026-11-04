@@ -43,8 +43,8 @@
     <section id="installation" aria-labelledby="installation-title">
       <h2 id="installation-title">Installation</h2>
       <div class="prose">
-<pre><code># Gemfile
-gem "gretelx"</code></pre>
+<pre><code class="language-ruby"><span class="c1"># Gemfile</span>
+<span class="n">gem</span> <span class="s2">"gretelx"</span></code></pre>
         <p>The railtie adds <code>breadcrumb</code>, <code>breadcrumb_trail</code> and <code>breadcrumb_json_ld</code> to your views, and <code>breadcrumbs_with</code> to your controllers. Ruby 3.3 or later, Rails 8.0 or later (Action Pack and Active Support).</p>
       </div>
     </section>
@@ -53,29 +53,29 @@ gem "gretelx"</code></pre>
       <h2 id="usage-title">Usage</h2>
       <div class="prose">
         <p>A namespace’s crumbs live in one subclass of <code>GretelX::Trail</code>. Each public method is a crumb; its parent is a call to another one.</p>
-<pre><code># app/breadcrumbs/admin/breadcrumbs.rb
-module Admin
-  class Breadcrumbs &lt; GretelX::Trail
-    def root
-      crumb "Home", admin_root_path
-    end
+<pre><code class="language-ruby"><span class="c1"># app/breadcrumbs/admin/breadcrumbs.rb</span>
+<span class="k">module</span> <span class="nn">Admin</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="k">def</span> <span class="nf">root</span>
+      <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
+    <span class="k">end</span>
 
-    def orders
-      crumb "Orders", admin_orders_path
-    end
+    <span class="k">def</span> <span class="nf">orders</span>
+      <span class="n">crumb</span> <span class="s2">"Orders"</span><span class="p">,</span> <span class="n">admin_orders_path</span>
+    <span class="k">end</span>
 
-    def order(order)
-      crumb order.to_s, admin_order_path(order), parent: orders
-    end
+    <span class="k">def</span> <span class="nf">order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+      <span class="n">crumb</span> <span class="n">order</span><span class="p">.</span><span class="nf">to_s</span><span class="p">,</span> <span class="n">admin_order_path</span><span class="p">(</span><span class="n">order</span><span class="p">),</span> <span class="ss">parent: </span><span class="n">orders</span>
+    <span class="k">end</span>
 
-    def order_documents(order)
-      crumb "Documents", nil, parent: order(order),
-        links: [link("Invoices", admin_order_invoices_path(order)), link("Receipts", admin_order_receipts_path(order))]
-    end
-  end
-end</code></pre>
-<pre><code>&lt;%# app/views/admin/orders/show.html.erb: optional, this is what the trail derives on its own %&gt;
-&lt;% breadcrumb @order %&gt;</code></pre>
+    <span class="k">def</span> <span class="nf">order_documents</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+      <span class="n">crumb</span> <span class="s2">"Documents"</span><span class="p">,</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">parent: </span><span class="n">order</span><span class="p">(</span><span class="n">order</span><span class="p">),</span>
+        <span class="ss">links: </span><span class="p">[</span><span class="n">link</span><span class="p">(</span><span class="s2">"Invoices"</span><span class="p">,</span> <span class="n">admin_order_invoices_path</span><span class="p">(</span><span class="n">order</span><span class="p">)),</span> <span class="n">link</span><span class="p">(</span><span class="s2">"Receipts"</span><span class="p">,</span> <span class="n">admin_order_receipts_path</span><span class="p">(</span><span class="n">order</span><span class="p">))]</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+<pre><code class="language-erb"><span class="c">&lt;%# app/views/admin/orders/show.html.erb: optional, this is what the trail derives on its own %&gt;</span>
+<span class="cp">&lt;%</span> <span class="n">breadcrumb</span> <span class="vi">@order</span> <span class="cp">%&gt;</span></code></pre>
         <h3>In a view</h3>
         <ul>
           <li><code>breadcrumb :name, *arguments</code> calls the crumb named <code>name</code> with those arguments.</li>
@@ -101,19 +101,19 @@ end</code></pre>
       <h2 id="rendering-title">Rendering</h2>
       <div class="prose">
         <p><code>breadcrumb_trail</code> returns an array of levels, root first. Each level has <code>label</code>, <code>url</code> (a path, or <code>nil</code>), <code>links</code> (each with <code>label</code> and <code>url</code>) and <code>current?</code>, true on the last one. The gem ships no HTML: whether the current page is a link, which separator to use, and how a level with extra links looks are your component’s choices.</p>
-<pre><code>&lt;%# app/views/layouts/admin.html.erb %&gt;
-&lt;nav aria-label="Breadcrumb"&gt;
-  &lt;ol&gt;
-    &lt;% breadcrumb_trail.each do |level| %&gt;
-      &lt;li&gt;
-        &lt;%= link_to_unless level.current?, level.label, level.url %&gt;
-        &lt;% level.links.each do |link| %&gt;
-          &lt;%= link_to link.label, link.url %&gt;
-        &lt;% end %&gt;
-      &lt;/li&gt;
-    &lt;% end %&gt;
-  &lt;/ol&gt;
-&lt;/nav&gt;</code></pre>
+<pre><code class="language-erb"><span class="c">&lt;%# app/views/layouts/admin.html.erb %&gt;</span>
+<span class="nt">&lt;nav</span> <span class="na">aria-label=</span><span class="s">"Breadcrumb"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;ol&gt;</span>
+    <span class="cp">&lt;%</span> <span class="n">breadcrumb_trail</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">level</span><span class="o">|</span> <span class="cp">%&gt;</span>
+      <span class="nt">&lt;li&gt;</span>
+        <span class="cp">&lt;%=</span> <span class="n">link_to_unless</span> <span class="n">level</span><span class="p">.</span><span class="nf">current?</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">label</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">url</span> <span class="cp">%&gt;</span>
+        <span class="cp">&lt;%</span> <span class="n">level</span><span class="p">.</span><span class="nf">links</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">link</span><span class="o">|</span> <span class="cp">%&gt;</span>
+          <span class="cp">&lt;%=</span> <span class="n">link_to</span> <span class="n">link</span><span class="p">.</span><span class="nf">label</span><span class="p">,</span> <span class="n">link</span><span class="p">.</span><span class="nf">url</span> <span class="cp">%&gt;</span>
+        <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span>
+      <span class="nt">&lt;/li&gt;</span>
+    <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;/ol&gt;</span>
+<span class="nt">&lt;/nav&gt;</span></code></pre>
         <p>A view’s <code>breadcrumb</code> call must come before the layout reads <code>breadcrumb_trail</code>, which is the case for anything in the view itself, since Rails renders the view before its layout.</p>
       </div>
     </section>
@@ -123,9 +123,9 @@ end</code></pre>
       <div class="prose">
         <p><code>Admin::OrdersController</code> reads <code>Admin::Breadcrumbs</code>, falling back on enclosing modules and then on a top-level <code>Breadcrumbs</code>. Two namespaces may both define <code>order</code>: they never see each other.</p>
         <p>A controller outside the namespace picks a trail class explicitly. Subclasses inherit the choice:</p>
-<pre><code>class CheckoutController &lt; ApplicationController
-  breadcrumbs_with Storefront::Breadcrumbs
-end</code></pre>
+<pre><code class="language-ruby"><span class="k">class</span> <span class="nc">CheckoutController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+  <span class="n">breadcrumbs_with</span> <span class="no">Storefront</span><span class="o">::</span><span class="no">Breadcrumbs</span>
+<span class="k">end</span></code></pre>
         <p>The classes live in <code>app/breadcrumbs/</code>, an autoloaded directory, so Zeitwerk loads them with the rest of the app and eager loading has them in memory before a prefork server forks.</p>
       </div>
     </section>
@@ -146,22 +146,22 @@ end</code></pre>
         <p>The record is the one the controller already loaded, <code>@post</code> in <code>PostsController</code>: it is never looked up again, and without it <code>show</code> and <code>edit</code> derive no trail. A controller with no <code>index</code> or <code>show</code> route still gets its level, without a link. Other actions derive nothing.</p>
         <h3>Labels</h3>
         <p>« New » and « Edit » are translated through <code>gretelx.new</code> and <code>gretelx.edit</code>:</p>
-<pre><code># config/locales/es.yml
-es:
-  gretelx:
-    new: Nuevo
-    edit: Editar</code></pre>
+<pre><code class="language-yaml"><span class="c1"># config/locales/es.yml</span>
+<span class="na">es</span><span class="pi">:</span>
+  <span class="na">gretelx</span><span class="pi">:</span>
+    <span class="na">new</span><span class="pi">:</span> <span class="s">Nuevo</span>
+    <span class="na">edit</span><span class="pi">:</span> <span class="s">Editar</span></code></pre>
         <h3>Overrides</h3>
         <p>To change how a trail is derived in a namespace, override any of four private methods in its trail class: <code>collection_crumb</code>, <code>record_crumb(record)</code>, <code>new_record_crumb</code>, <code>edit_record_crumb(record)</code>. The <code>controller</code> they read is private too.</p>
-<pre><code>module Admin
-  class Breadcrumbs &lt; GretelX::Trail
-    private
+<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="kp">private</span>
 
-    def new_record_crumb
-      crumb helpers.t("admin.breadcrumbs.new"), parent: collection_crumb
-    end
-  end
-end</code></pre>
+    <span class="k">def</span> <span class="nf">new_record_crumb</span>
+      <span class="n">crumb</span> <span class="n">helpers</span><span class="p">.</span><span class="nf">t</span><span class="p">(</span><span class="s2">"admin.breadcrumbs.new"</span><span class="p">),</span> <span class="ss">parent: </span><span class="n">collection_crumb</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
         <h3>Nested routes</h3>
         <p>Under a nested route, each <code>:&lt;name&gt;_id</code> path parameter is a parent level, outermost first. <code>/admin/posts/5/comments</code> gives Comments under Post 5 under Posts, the post being <code>@post</code>, as the controller loaded it: your <code>post</code> crumb, or else its <code>to_s</code> linked to its <code>show</code> route, under the posts collection.</p>
         <p>A parent the controller did not load is never queried: the trail skips the nesting’s crumb, keeps that parent’s collection (Posts) and goes straight to the current level.</p>
@@ -184,15 +184,15 @@ end</code></pre>
       <h2 id="tests-title">Checked in tests</h2>
       <div class="prose">
         <p>A crumb defined twice already raises when its class loads. One test checks the rest, without running a crumb or loading a record:</p>
-<pre><code># test/breadcrumbs_test.rb
-require "test_helper"
-require "gretelx/test_helper"
+<pre><code class="language-ruby"><span class="c1"># test/breadcrumbs_test.rb</span>
+<span class="nb">require</span> <span class="s2">"test_helper"</span>
+<span class="nb">require</span> <span class="s2">"gretelx/test_helper"</span>
 
-class BreadcrumbsTest &lt; ActiveSupport::TestCase
-  test "breadcrumbs" do
-    assert_breadcrumbs_valid
-  end
-end</code></pre>
+<span class="k">class</span> <span class="nc">BreadcrumbsTest</span> <span class="o">&lt;</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">TestCase</span>
+  <span class="nb">test</span> <span class="s2">"breadcrumbs"</span> <span class="k">do</span>
+    <span class="n">assert_breadcrumbs_valid</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
         <p>It eager-loads the app and reads the source of every crumb (and of the private helpers next to it) with Prism:</p>
         <ul>
           <li>every parent a crumb calls is a crumb, and every <code>_path</code> or <code>_url</code> it calls is a route helper;</li>
@@ -207,22 +207,22 @@ end</code></pre>
       <h2 id="storefronts-title">Storefronts</h2>
       <div class="prose">
         <p>The trail is data, so absolute URLs are just <code>_url</code> helpers in that namespace’s crumbs. They read the host from the current request.</p>
-<pre><code>module Storefront
-  class Breadcrumbs &lt; GretelX::Trail
-    def shop
-      crumb "Shop", storefront_root_url
-    end
+<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Storefront</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="k">def</span> <span class="nf">shop</span>
+      <span class="n">crumb</span> <span class="s2">"Shop"</span><span class="p">,</span> <span class="n">storefront_root_url</span>
+    <span class="k">end</span>
 
-    def category(category)
-      crumb category.name, storefront_category_url(category),
-        parent: category.parent ? category(category.parent) : shop
-    end
-  end
-end</code></pre>
+    <span class="k">def</span> <span class="nf">category</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+      <span class="n">crumb</span> <span class="n">category</span><span class="p">.</span><span class="nf">name</span><span class="p">,</span> <span class="n">storefront_category_url</span><span class="p">(</span><span class="n">category</span><span class="p">),</span>
+        <span class="ss">parent: </span><span class="n">category</span><span class="p">.</span><span class="nf">parent</span> <span class="p">?</span> <span class="n">category</span><span class="p">(</span><span class="n">category</span><span class="p">.</span><span class="nf">parent</span><span class="p">)</span> <span class="p">:</span> <span class="n">shop</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
         <h3>JSON-LD</h3>
         <p><code>breadcrumb_json_ld</code> renders the same trail as a schema.org <code>BreadcrumbList</code>, the structured data Google reads for its breadcrumb rich result:</p>
-<pre><code>&lt;%# app/views/layouts/storefront.html.erb, in &lt;head&gt; %&gt;
-&lt;%= breadcrumb_json_ld %&gt;</code></pre>
+<pre><code class="language-erb"><span class="c">&lt;%# app/views/layouts/storefront.html.erb, in &lt;head&gt; %&gt;</span>
+<span class="cp">&lt;%=</span> <span class="n">breadcrumb_json_ld</span> <span class="cp">%&gt;</span></code></pre>
         <ul>
           <li>Positions start at 1, and the current level may have no URL. A level above it without a URL is not a page, so it is left out.</li>
           <li>A name is plain text: an <code>html_safe</code> label (an icon, a <code>&lt;b&gt;</code>) has its markup stripped and its entities decoded.</li>
@@ -248,9 +248,9 @@ end</code></pre>
           </tbody>
         </table>
         <p>To change where an unknown crumb or a relative URL raises, set it in an initializer:</p>
-<pre><code># config/initializers/gretelx.rb
-GretelX.raise_on_unknown_crumb = true # on staging too
-GretelX.raise_on_relative_url = true</code></pre>
+<pre><code class="language-ruby"><span class="c1"># config/initializers/gretelx.rb</span>
+<span class="no">GretelX</span><span class="p">.</span><span class="nf">raise_on_unknown_crumb</span> <span class="o">=</span> <span class="kp">true</span> <span class="c1"># on staging too</span>
+<span class="no">GretelX</span><span class="p">.</span><span class="nf">raise_on_relative_url</span> <span class="o">=</span> <span class="kp">true</span></code></pre>
       </div>
     </section>
   </main>
