@@ -10,8 +10,8 @@ class JsonLdTest < IntegrationTestCase
   test "a BreadcrumbList with positions from 1 and the current level last" do
     breadcrumb_list = GretelX::JsonLd.call([
       level("Shop", "https://example.com/"),
-      level("Audio", "https://example.com/categories/1"),
-      level("Speakers", "https://example.com/categories/2", current: true)
+      level("Books", "https://example.com/categories/1"),
+      level("Fiction", "https://example.com/categories/2", current: true)
     ])
 
     assert_equal(
@@ -20,8 +20,8 @@ class JsonLdTest < IntegrationTestCase
         "@type" => "BreadcrumbList",
         "itemListElement" => [
           {"@type" => "ListItem", "position" => 1, "name" => "Shop", "item" => "https://example.com/"},
-          {"@type" => "ListItem", "position" => 2, "name" => "Audio", "item" => "https://example.com/categories/1"},
-          {"@type" => "ListItem", "position" => 3, "name" => "Speakers", "item" => "https://example.com/categories/2"}
+          {"@type" => "ListItem", "position" => 2, "name" => "Books", "item" => "https://example.com/categories/1"},
+          {"@type" => "ListItem", "position" => 3, "name" => "Fiction", "item" => "https://example.com/categories/2"}
         ]
       },
       breadcrumb_list

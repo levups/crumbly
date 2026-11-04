@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.0
+
+First release: breadcrumbs for Rails, trails defined in Ruby classes or derived from the routes, checked in tests.
 
 - One `GretelX::Trail` subclass per namespace (`Admin::Breadcrumbs`, `Storefront::Breadcrumbs`), found from
   the controller's module; one public method per crumb, its parent a plain method call.

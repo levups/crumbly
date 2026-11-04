@@ -100,8 +100,8 @@ When a view does not call `breadcrumb`, the trail follows the action:
 |---|---|
 | `index` | the collection: your `posts` crumb, or else the model's plural name linked to the `index` route |
 | `show` | the record: your `post` crumb, or else `to_s` linked to the `show` route, under the collection |
-| `new`, `create` | « New » (`gretelx.new`) under the collection |
-| `edit`, `update` | « Edit » (`gretelx.edit`) under the record |
+| `new`, `create` | "New" (`gretelx.new`) under the collection |
+| `edit`, `update` | "Edit" (`gretelx.edit`) under the record |
 
 The record is the one the controller already loaded (`@post` in `PostsController`): it is never looked up
 again. To change how a trail is derived, override the private methods `collection_crumb`, `record_crumb`,
@@ -231,7 +231,7 @@ end
 ```
 
 ```ruby
-# GretelX: nothing to write. new and edit derive « New » under the collection, « Edit » under the record.
+# GretelX: nothing to write. new and edit derive "New" under the collection, "Edit" under the record.
 ```
 
 ## Checked in tests

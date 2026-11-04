@@ -129,14 +129,14 @@ end</code></pre>
 end</code></pre>
 <pre><code>&lt;%# app/views/admin/orders/messages.html.erb %&gt;
 &lt;% breadcrumb :order_messages, @order %&gt;</code></pre>
-          <p class="code-label">index and show find their crumbs on their own; without <code>orders</code> and <code>order</code>, they would still derive « Orders » and the order’s <code>to_s</code></p>
+          <p class="code-label">index and show find their crumbs on their own; without <code>orders</code> and <code>order</code>, they would still derive "Orders" and the order’s <code>to_s</code></p>
         </div>
       </div>
       <div class="prose">
         <h3>Steps</h3>
         <ol>
           <li>Replace <code>gem "breadcrumbs_on_rails"</code> with <code>gem "gretelx"</code>.</li>
-          <li>The class-level « Home » becomes <code>root</code> in each namespace’s trail class. A class-level section crumb (« Orders ») becomes a crumb named after the controller, <code>orders</code>, only if the derived label (the model’s human plural name) is not the one you want.</li>
+          <li>The class-level "Home" becomes <code>root</code> in each namespace’s trail class. A class-level section crumb ("Orders") becomes a crumb named after the controller, <code>orders</code>, only if the derived label (the model’s human plural name) is not the one you want.</li>
           <li>Delete the <code>add_breadcrumb</code> calls of <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code>. For other actions, write a crumb and name it from the view with <code>breadcrumb</code>.</li>
           <li>Replace <code>render_breadcrumbs</code> with a loop over <code>breadcrumb_trail</code>. A custom builder becomes that loop, or your component.</li>
         </ol>
@@ -197,7 +197,7 @@ end</code></pre>
         <h3>Steps</h3>
         <ol>
           <li>Replace <code>gem "loaf"</code> with <code>gem "gretelx"</code>.</li>
-          <li>Move the controllers’ class-level crumbs into each namespace’s trail class: « Home » becomes <code>root</code>, a section becomes a crumb named after the controller.</li>
+          <li>Move the controllers’ class-level crumbs into each namespace’s trail class: "Home" becomes <code>root</code>, a section becomes a crumb named after the controller.</li>
           <li>Delete the crumbs appended in <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code>, and turn the others into crumbs that name their parent.</li>
           <li>In views, a run of <code>breadcrumb "Name", path</code> calls becomes one crumb method, named with <code>breadcrumb :name</code>.</li>
           <li>In the layout, <code>breadcrumb_trail do |crumb|</code> becomes <code>breadcrumb_trail.each do |level|</code>, and <code>crumb.name</code> becomes <code>level.label</code>.</li>
@@ -206,15 +206,17 @@ end</code></pre>
     </section>
   </main>
 
-  <footer>
-    <span>Next Gen Gems, by Level UP Solutions</span>
+  <footer class="family">
+    <p><a href="https://github.com/next-gen-gems">Next Gen Gems</a>, by Level UP Solutions</p>
     <nav aria-label="Next Gen Gems">
-      <a href="https://next-gen-gems.github.io/slimx/">SlimX</a>
-      <a href="https://next-gen-gems.github.io/browserx/">BrowserX</a>
-      <a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a>
-      <a href="https://next-gen-gems.github.io/gretelx/" aria-current="page">GretelX</a>
+      <ul>
+        <li><a href="https://next-gen-gems.github.io/slimx/">SlimX</a></li>
+        <li><a href="https://next-gen-gems.github.io/browserx/">BrowserX</a></li>
+        <li><a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a></li>
+        <li><a href="https://next-gen-gems.github.io/gretelx/" aria-current="page">GretelX</a></li>
+      </ul>
     </nav>
-    <a href="https://github.com/next-gen-gems/gretelx">Source on GitHub</a>
+    <p><a href="https://github.com/next-gen-gems/gretelx">Source on GitHub</a></p>
   </footer>
 </div>
 </body>

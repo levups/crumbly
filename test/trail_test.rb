@@ -19,8 +19,8 @@ class TrailTest < IntegrationTestCase
   end
 
   test "a recursive tree is a crumb calling itself" do
-    assert_trail "Home|/admin > Categories|/admin/categories > Audio|/admin/categories/1 > " \
-                 "Speakers|/admin/categories/2 > Bookshelf speakers|/admin/categories/3|current",
+    assert_trail "Home|/admin > Categories|/admin/categories > Books|/admin/categories/1 > " \
+                 "Fiction|/admin/categories/2 > Novels|/admin/categories/3|current",
       "/admin/categories/3"
   end
 
@@ -30,8 +30,8 @@ class TrailTest < IntegrationTestCase
 
   test "each namespace has its own crumbs under the same names" do
     assert_trail "Shop|http://www.example.com/storefront > " \
-                 "Audio|http://www.example.com/storefront/categories/1 > " \
-                 "Speakers|http://www.example.com/storefront/categories/2|current",
+                 "Books|http://www.example.com/storefront/categories/1 > " \
+                 "Fiction|http://www.example.com/storefront/categories/2|current",
       "/storefront/categories/2"
   end
 

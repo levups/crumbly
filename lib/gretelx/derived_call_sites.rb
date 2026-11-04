@@ -36,8 +36,8 @@ module GretelX
       record = "@#{controller_name.singularize}"
       if FORM_CRUMBS.include?(target.delete_prefix(":"))
         case action
-        when "new" then "new derives « New » under the collection"
-        when "edit" then "edit derives « Edit » under the record"
+        when "new" then 'new derives "New" under the collection'
+        when "edit" then 'edit derives "Edit" under the record'
         else "only new and edit views derive a form's trail"
         end
       elsif action == "show" && (target == record || (target == ":#{controller_name.singularize}" && arguments == ", #{record}"))
