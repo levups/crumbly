@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-04
+
+The app's own test suite becomes the migration oracle, `verify!` catches crumbs called with the wrong number of
+arguments, and `gretelx-convert` converts the conditionals and loops it used to leave out or get wrong.
+
+**New**
+- `GretelX::Oracle.watch`, in the test helper of a migrating app, compares with gretel every trail the tests
+  render: changed trails go to `Oracle.differences` with their page, including pages without a `breadcrumb` call
+  that now derive a trail, and calls the action would derive anyway go to `Oracle.redundant_calls`. `watch { ... }`
+  limits it to a block; run the watched suite with `PARALLEL_WORKERS=1`. `gretelx/oracle` now requires gretel, so
+  the app can bundle it with `require: false`.
+- `GretelX.verify!` reports crumbs called with the wrong number of arguments, by another crumb or by a
+  `breadcrumb :name, ...` in a view (`app/views/orders/index.html.erb:1 calls breadcrumb :orders with 1
+  argument, which takes 0`): gretel dropped or defaulted them to `nil`, a converted crumb raises `ArgumentError`.
+
+**Fixed**
+- `gretelx-convert` converts a `link` or `parent` in any conditional, `case`/`when` included, followed by more
+  statements: each branch ends with its own crumb call. A `parent` set under a condition keeps the one set before
+  it, and a condition that assigns a local no longer raises `NameError` on the first render.
+- `gretelx-convert` expands loops that destructure their pairs or list constants, copies into each crumb the
+  locals it reads (a literal `path` is written in place, so `verify!` can check it), and turns a lambda assigned
+  at the top of the file into a private method of the Trail. `parent parent_name` with a literal local now calls
+  the crumb (`posts`) instead of `crumb_for(:posts)`.
+
 ## [1.0.0] — 2026-11-04
 
 First release: breadcrumbs for Rails, trails defined in Ruby classes or derived from the routes, checked in
@@ -29,5 +53,6 @@ tests. Replaces gretel: `gretelx-convert` turns its breadcrumbs files into Grete
   `breadcrumb` calls a derived trail may now cover.
 - `GretelX::Oracle.compare` draws trails with gretel and with GretelX, from a test of an app migrating.
 
-[Unreleased]: https://github.com/next-gen-gems/gretelx/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/next-gen-gems/gretelx/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/next-gen-gems/gretelx/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/next-gen-gems/gretelx/releases/tag/v1.0.0
