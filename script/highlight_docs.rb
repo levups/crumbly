@@ -28,6 +28,6 @@ stale_paths = Dir[File.expand_path("../docs/*.html", __dir__)].sort.select do |p
   true
 end
 
-relative_paths = stale_paths.map { File.join("docs", File.basename(_1)) }
+relative_paths = stale_paths.map { |path| File.join("docs", File.basename(path)) }
 abort "Not highlighted: #{relative_paths.join(", ")}. Run bundle exec rake docs:highlight" if check && stale_paths.any?
 puts "Highlighted #{relative_paths.join(", ")}" if stale_paths.any?
