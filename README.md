@@ -398,6 +398,20 @@ BUNDLE_GEMFILE=gemfiles/rails_8_0.gemfile bundle exec rake test  # Rails 8.0
 bundle exec rubocop
 ```
 
+### Releasing
+
+Changes go under `## [Unreleased]` in `CHANGELOG.md` as they land. To release them, from an up-to-date `main`
+whose CI is green:
+
+```sh
+bin/release minor --dry-run   # the notes and the changes, nothing written
+bin/release minor             # or patch, major, or an exact version such as 1.2.0
+```
+
+`bin/release` dates the Unreleased section, bumps the version, commits, and pushes the commit with a signed tag
+`vX.Y.Z`. The tag starts the Release workflow, which publishes the gem to RubyGems through trusted publishing and
+creates the GitHub release with the version's notes and the `.gem`.
+
 ## License
 
 MIT, by Level UP Solutions. GretelX keeps the idea of [gretel](https://github.com/kzkn/gretel), by Lasse Bunk and
