@@ -112,13 +112,15 @@ class VerifyTest < ActiveSupport::TestCase
     views = {
       "admin/orders/index.html.erb" => "<% breadcrumb :orders, @customer %>",
       "admin/orders/show.html.erb" => "<% breadcrumb :order %>",
+      "admin/orders/edit.html.erb" => "<% breadcrumb :orders, autoroot: false %>",
       "admin/returns/index.html.erb" => "<% breadcrumb :returns, @order, @customer if @order -%>",
       "admin/returns/new.html.erb" => "<% breadcrumb :returns, *owners %>\n<% breadcrumb :returns,\n  @order, @customer %>"
     }
     with_views(views) do |views_directory|
       error = assert_raises(GretelX::InvalidTrail) { verify(Admin::Breadcrumbs, sources: [views_directory]) }
       assert_equal <<~TEXT.chomp, error.message.gsub("#{views_directory}/", "")
-        3 breadcrumb problem(s):
+        4 breadcrumb problem(s):
+        - admin/orders/edit.html.erb:1 calls breadcrumb :orders with 1 argument, which takes 0
         - admin/orders/index.html.erb:1 calls breadcrumb :orders with 1 argument, which takes 0
         - admin/orders/show.html.erb:1 calls breadcrumb :order with 0 arguments, which takes 1
         - admin/returns/index.html.erb:1 calls breadcrumb :returns with 2 arguments, which takes 0 to 1

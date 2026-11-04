@@ -123,8 +123,14 @@ module GretelX
     # gretel ran a crumb as a block, which took any number of arguments; a crumb method raises ArgumentError.
     def arity_problem(trail_classes, name, call)
       arguments = call.arguments&.arguments || []
-      arguments = arguments.drop(1) if call.name == :breadcrumb
-      return if arguments.any? { |argument| argument in Prism::SplatNode | Prism::KeywordHashNode | Prism::ForwardingArgumentsNode }
+      skipped_nodes = [Prism::SplatNode, Prism::ForwardingArgumentsNode]
+      # `breadcrumb(target, *arguments)` takes no keywords: a view's `key: value` reaches the crumb as one Hash.
+      if call.name == :breadcrumb
+        arguments = arguments.drop(1)
+      else
+        skipped_nodes << Prism::KeywordHashNode
+      end
+      return if arguments.any? { |argument| skipped_nodes.any? { |node_class| argument.is_a?(node_class) } }
 
       crumb_methods = Array(trail_classes).filter_map do |trail_class|
         trail_class.instance_method(name) if trail_class.crumb?(name)
