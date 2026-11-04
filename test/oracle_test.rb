@@ -80,6 +80,7 @@ class OracleWatchTest < IntegrationTestCase
   end
 
   test "a call gretel cannot draw is a difference" do
+    Gretel.breadcrumb_paths = [File.expand_path("fixtures/gretel_root_only.rb", __dir__)]
     controller = Admin::OrdersController.new
     controller.request = ActionDispatch::TestRequest.create
     controller.action_name = "show"
