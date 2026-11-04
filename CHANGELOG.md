@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-11-04
+
 First release: breadcrumbs for Rails, trails defined in Ruby classes or derived from the routes, checked in
 tests. Replaces gretel: `gretelx-convert` turns its breadcrumbs files into GretelX classes.
 
@@ -26,3 +28,6 @@ tests. Replaces gretel: `gretelx-convert` turns its breadcrumbs files into Grete
   defined in loops over literals and listing, with their line, what it does not convert. `--views` lists the
   `breadcrumb` calls a derived trail may now cover.
 - `GretelX::Oracle.compare` draws trails with gretel and with GretelX, from a test of an app migrating.
+
+[Unreleased]: https://github.com/next-gen-gems/gretelx/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/next-gen-gems/gretelx/releases/tag/v1.0.0
