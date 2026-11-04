@@ -137,6 +137,35 @@ class ConverterTest < ActiveSupport::TestCase
     GRETEL
   end
 
+  test "a condition that binds looser than the ternary is parenthesised" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def note(note)
+        crumb "Note",
+          parent: (note.draft? or note.hidden?) ? drafts : ((not note.public?) ? private_notes : notes)
+      end
+
+      def reply(reply)
+        crumb "Reply", parent: (comment = reply.comment) ? comment(comment) : comments
+      end
+    RUBY
+      crumb :note do |note|
+        link "Note"
+        parent :notes
+        parent :private_notes if not note.public?
+        parent :drafts if note.draft? or note.hidden?
+      end
+
+      crumb :reply do |reply|
+        link "Reply"
+        if comment = reply.comment
+          parent :comment, comment
+        else
+          parent :comments
+        end
+      end
+    GRETEL
+  end
+
   test "a local assigned by the condition of a parent is assigned before it is read" do
     assert_crumb <<~RUBY, <<~GRETEL
       def note(note)

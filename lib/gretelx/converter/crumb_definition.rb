@@ -171,11 +171,20 @@ module GretelX
         # A modifier runs its predicate first but is read after its body: a local the predicate assigns
         # would be read as a method call.
         else_target ||= "nil" if writes_local?(node.predicate)
+        condition = else_target && ternary_condition(node.predicate, predicate)
         if node.is_a?(Prism::IfNode)
-          else_target ? "#{predicate} ? #{then_target} : #{else_target}" : "(#{then_target} if #{predicate})"
+          else_target ? "#{condition} ? #{then_target} : #{else_target}" : "(#{then_target} if #{predicate})"
         else
-          else_target ? "#{predicate} ? #{else_target} : #{then_target}" : "(#{then_target} unless #{predicate})"
+          else_target ? "#{condition} ? #{else_target} : #{then_target}" : "(#{then_target} unless #{predicate})"
         end
+      end
+
+      # `?:` binds tighter than `or`, `not` and `=`: `x or y ? a : b` would pass `x` as the parent.
+      def ternary_condition(predicate, text)
+        bare = (predicate in Prism::LocalVariableReadNode | Prism::InstanceVariableReadNode | Prism::ParenthesesNode |
+          Prism::CallNode)
+        bare &&= predicate.message != "not" if predicate.is_a?(Prism::CallNode)
+        bare ? text : "(#{text})"
       end
 
       def writes_local?(node)
