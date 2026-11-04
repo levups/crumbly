@@ -22,7 +22,7 @@ bundle exec ruby [--yjit] bench/render.rb                        # render agains
 ```
 
 CI (`.github/workflows/ci.yml`) runs RuboCop, then every maintained Ruby and ruby-head times each Gemfile. A new
-Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's Gemfile list.
+Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's `rails` matrix.
 
 ## Traps
 
@@ -44,6 +44,8 @@ Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't
 
 - Never edit `CHANGELOG.md` in a PR: any two PRs adding a line there conflict. The changelog is written when
   releasing, from the PRs merged since the last tag; a PR title says what changes for users.
+- A draft runs no CI, so it never turns green. Confident in the change: open the pull request ready for review,
+  auto-merge on. Not yet: a draft, then `gh pr ready` when it needs the CI.
 - To release, read every PR merged since the last tag (`git log --first-parent --oneline <tag>..origin/main`,
   squash merges end in `(#n)`, then `gh pr view n`), and write the release under `## [Unreleased]` without
   committing it: a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT)
