@@ -22,7 +22,7 @@ class OracleTest < ActiveSupport::TestCase
   test "the converted file draws the trails gretel drew" do
     cases = [
       [:orders], [:order, ORDER], [ORDER], [:order_messages, ORDER], [:customer, ALICE], [:returns],
-      [:returns, ORDER], [:returns, ALICE], [:category, BOOKSHELF], [:posts], [:sales_report], [:help]
+      [:returns, ORDER], [:returns, ALICE], [:category, NOVELS], [:posts], [:sales_report], [:help]
     ]
 
     assert_empty GretelX::Oracle.compare(@view, Converted::Breadcrumbs, cases).map(&:to_s)
