@@ -51,8 +51,8 @@
       <h2 id="rerun-title">Running it again</h2>
       <div class="prose">
         <p>From a checkout of the gem, once with YJIT off and once with it on:</p>
-<pre><code>bundle exec ruby bench/render.rb
-bundle exec ruby --yjit bench/render.rb</code></pre>
+<pre><code class="language-sh">bundle <span class="nb">exec </span>ruby bench/render.rb
+bundle <span class="nb">exec </span>ruby <span class="nt">--yjit</span> bench/render.rb</code></pre>
         <p>Run each three times and keep the median. Numbers depend on the machine: compare the two gems on the same one, not against this table.</p>
       </div>
     </section>

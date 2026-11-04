@@ -1,34 +1,26 @@
 name: Bug report
-description: A trail with the wrong crumbs, a crash, a converter or verifier mistake
+description: A wrong trail, a crumb that should raise and does not, a crash
 labels: [bug]
 body:
-  - type: input
-    id: route
-    attributes:
-      label: Route
-      description: The page's route and controller action, as `bin/rails routes` lists them.
-      placeholder: GET /admin/orders/:order_id/messages/:id — admin/messages#show
-    validations:
-      required: true
   - type: textarea
-    id: trail
+    id: code
     attributes:
-      label: Trail definition
-      description: The smallest `GretelX::Trail` class (or gretel breadcrumbs file, for `gretelx-convert`) that reproduces it, and the view's `breadcrumb` call if it has one.
+      label: Trail class, routes and view
+      description: The smallest breadcrumbs class, routes and view call that reproduce it.
       render: ruby
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: Expected and actual crumbs
-      description: The crumbs you expected, label and URL of each, and the ones GretelX renders, or the error and its backtrace.
+      label: Expected and actual trail
+      description: The trail you expected, what `breadcrumb_trail` returned instead, or the error and its backtrace.
     validations:
       required: true
   - type: input
     id: versions
     attributes:
       label: Versions
-      placeholder: GretelX 1.0.0 (or commit), Ruby 4.0.1, Rails 8.1
+      placeholder: GretelX 1.0.0 (or commit), Rails 8.1, Ruby 4.0.1
     validations:
       required: true

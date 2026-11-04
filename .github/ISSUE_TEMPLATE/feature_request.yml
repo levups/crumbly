@@ -1,16 +1,16 @@
 name: Feature request
-description: A trail GretelX cannot express or derive yet, a gretel feature to migrate, a new check
+description: A trail GretelX cannot express or derive yet, a case gretelx-convert misses
 body:
   - type: textarea
     id: need
     attributes:
       label: What you need
-      description: The pages and routes it concerns, and what stops you today. For a gretel feature, how your app uses it.
+      description: The pages and trail you are trying to produce, and what stops you today.
     validations:
       required: true
   - type: textarea
     id: api
     attributes:
       label: How you would write it
-      description: The trail class or view code you would like to write.
+      description: The breadcrumbs class or view call you would like to write.
       render: ruby
