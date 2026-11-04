@@ -70,5 +70,19 @@ module Converted
     def orders
       crumb helpers.t("admin.orders", default: "All orders"), admin_orders_path
     end
+
+    def order_notes(order)
+      crumb label_for("Internal notes"), admin_order_notes_path(order), parent: order(order)
+    end
+
+    def order_shipments(order)
+      crumb label_for(:shipments), admin_order_shipments_path(order), parent: order(order)
+    end
+
+    private
+
+    def label_for(label)
+      label.is_a?(Symbol) ? label.to_s.humanize : label
+    end
   end
 end

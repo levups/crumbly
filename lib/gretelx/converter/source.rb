@@ -8,8 +8,8 @@ module GretelX
 
       attr_reader :path, :start_offset, :expansion_description
 
-      def self.parse(text, path:, start_offset: 0, expansion_description: nil)
-        result = Prism.parse(text)
+      def self.parse(text, path:, start_offset: 0, expansion_description: nil, local_names: [])
+        result = Prism.parse(text, scopes: [local_names])
         if result.failure?
           error = result.errors.first
           raise ArgumentError, "#{path}:#{error.location.start_line}: #{error.message}"
@@ -41,9 +41,10 @@ module GretelX
       end
 
       # Blanks everything before the expanded text, so that its lines and columns stay those of this file.
-      def expansion(expanded_text, start_offset, description)
+      def expansion(expanded_text, start_offset, description, local_names)
         padding = @text.byteslice(0, start_offset).gsub(/[^\n]/) { |character| " " * character.bytesize }
-        self.class.parse(padding + expanded_text, path:, start_offset:, expansion_description: description)
+        self.class.parse(padding + expanded_text, path:, start_offset:, expansion_description: description,
+          local_names:)
       end
 
       def rewrite(from_offset, to_offset, edits)
