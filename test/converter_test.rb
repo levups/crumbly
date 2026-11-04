@@ -182,6 +182,84 @@ class ConverterTest < ActiveSupport::TestCase
     GRETEL
   end
 
+  test "a conditional before other statements takes them into each of its branches" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def comment(comment)
+        if comment.new_record?
+          crumb "New comment", parent: (post(comment.post) if comment.post)
+        else
+          crumb comment.to_s, [:admin, comment], parent: (post(comment.post) if comment.post)
+        end
+      end
+
+      def reports(author = nil)
+        if author
+          crumb author.name, [:admin, author], parent: posts, links: [link("Reports", nil)]
+        else
+          crumb "Reports", parent: posts
+        end
+      end
+    RUBY
+      crumb :comment do |comment|
+        if comment.new_record?
+          link "New comment"
+        else
+          link comment.to_s, [:admin, comment]
+        end
+        parent :post, comment.post if comment.post
+      end
+
+      crumb :reports do |author|
+        link author.name, [:admin, author] if author
+        link "Reports"
+        parent :posts
+      end
+    GRETEL
+  end
+
+  test "a case becomes one crumb call per branch" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def returns(owner = nil)
+        case owner
+        when Order, Invoice
+          crumb "Returns", [:admin, owner, :returns], parent: crumb_for(owner)
+        when Customer
+          crumb "Returns", admin_customer_returns_path(owner), parent: customer(owner)
+        else
+          crumb "Returns", admin_returns_path
+        end
+      end
+
+      def notes(owner = nil)
+        case owner
+        when Post
+          crumb "Notes", parent: post(owner)
+        end
+      end
+    RUBY
+      crumb :returns do |owner = nil|
+        case owner
+        when Order, Invoice
+          link "Returns", [:admin, owner, :returns]
+          parent owner
+        when Customer
+          link "Returns", admin_customer_returns_path(owner)
+          parent :customer, owner
+        else
+          link "Returns", admin_returns_path
+        end
+      end
+
+      crumb :notes do |owner|
+        case owner
+        when Post
+          link "Notes"
+          parent :post, owner
+        end
+      end
+    GRETEL
+  end
+
   test "view helpers go through helpers, a parent named like a local goes through self" do
     assert_crumb <<~RUBY, <<~GRETEL
       def account(orders)

@@ -323,14 +323,14 @@ files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crum
 | `parent record` | `parent: crumb_for(record)` |
 | `parent :a` and `parent :b` in an `if`/`else` | `parent: condition ? a : b` |
 | `parent :a`, then `parent :b if condition` | `parent: condition ? b : a` |
-| `link` and `parent` inside a final `if`, `elsif`, `unless` | one `crumb` call per branch |
+| `link` and `parent` inside an `if`, `elsif`, `unless` or `case`, modifiers included | one `crumb` call per branch, the statements after the conditional copied into each |
 | `t(".x")`, `current_user`: view helpers | `helpers.t(".x")`, `helpers.current_user`; route helpers stay bare |
 | `%i[a b].each { \|name\| crumb name do ... end }`, `{a: "A"}.each` | one method per element |
 
-It lists, without converting them: a loop over anything but a literal array or hash, `link` or `parent`
-anywhere else than at the top of the crumb or in its final conditional, `link` options (`title:`, `class:`),
-crumbs whose name is a Ruby keyword or an existing method (`display`, `test`), and any statement that is not
-a crumb. Comments are kept above the method they precede.
+It lists, without converting them: a loop over anything but a literal array or hash, `link` or `parent` inside
+anything but a conditional (a loop, a block), `link` options (`title:`, `class:`), crumbs whose name is a Ruby
+keyword or an existing method (`display`, `test`), and any statement that is not a crumb. Comments are kept
+above the method they precede.
 
 The codemod is built on Prism 1.2 or later: Ruby 3.4 ships it, and on Ruby 3.3 add `gem "prism"` to the
 development group.

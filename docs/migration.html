@@ -60,12 +60,12 @@
             <tr><td><code>parent record</code></td><td><code>parent: crumb_for(record)</code></td></tr>
             <tr><td><code>parent :a</code> and <code>parent :b</code> in an <code>if</code>/<code>else</code></td><td><code>parent: condition ? a : b</code></td></tr>
             <tr><td><code>parent :a</code>, then <code>parent :b if condition</code></td><td><code>parent: condition ? b : a</code></td></tr>
-            <tr><td><code>link</code> and <code>parent</code> inside a final <code>if</code>, <code>elsif</code>, <code>unless</code></td><td>one <code>crumb</code> call per branch</td></tr>
+            <tr><td><code>link</code> and <code>parent</code> inside an <code>if</code>, <code>elsif</code>, <code>unless</code> or <code>case</code>, modifiers included</td><td>one <code>crumb</code> call per branch, the statements after the conditional copied into each</td></tr>
             <tr><td><code>t(".x")</code>, <code>current_user</code>: view helpers</td><td><code>helpers.t(".x")</code>, <code>helpers.current_user</code>; route helpers stay bare</td></tr>
             <tr><td><code>%i[a b].each { |name| crumb name do ... end }</code>, <code>{a: "A"}.each</code></td><td>one method per element</td></tr>
           </tbody>
         </table>
-        <p>It lists, without converting them: a loop over anything but a literal array or hash, <code>link</code> or <code>parent</code> anywhere else than at the top of the crumb or in its final conditional, <code>link</code> options (<code>title:</code>, <code>class:</code>), crumbs whose name is a Ruby keyword or an existing method (<code>display</code>, <code>test</code>), and any statement that is not a crumb. Comments are kept above the method they precede.</p>
+        <p>It lists, without converting them: a loop over anything but a literal array or hash, <code>link</code> or <code>parent</code> inside anything but a conditional (a loop, a block), <code>link</code> options (<code>title:</code>, <code>class:</code>), crumbs whose name is a Ruby keyword or an existing method (<code>display</code>, <code>test</code>), and any statement that is not a crumb. Comments are kept above the method they precede.</p>
         <p>The codemod is built on Prism 1.2 or later: Ruby 3.4 ships it, and on Ruby 3.3 add <code>gem "prism"</code> to the development group.</p>
         <h3>2. Compare the trails</h3>
         <p>While gretel is still bundled, a test draws each trail with both gems and lists the differences in labels and URLs. gretel shows a crumb’s extra links as levels of their own: the comparison does the same with <code>links</code>.</p>
