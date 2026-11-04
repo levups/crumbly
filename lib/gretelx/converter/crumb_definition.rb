@@ -84,7 +84,7 @@ module GretelX
 
       def nil_tested_names(node, names = Set.new)
         case node
-        when Prism::IfNode, Prism::UnlessNode then tested_names(node.predicate, names)
+        when Prism::IfNode, Prism::UnlessNode, Prism::CaseNode then tested_names(node.predicate, names)
         when Prism::CallNode
           names << node.receiver.name if node.safe_navigation? && node.receiver.is_a?(Prism::LocalVariableReadNode)
         end
@@ -106,7 +106,8 @@ module GretelX
       end
 
       # gretel adds a level per `link` and keeps the last `parent`, in any order: they become one `crumb`
-      # call, ending the method or each branch of the conditional that ends it.
+      # call, ending the method or each branch of a conditional that calls them, the statements after the
+      # conditional copied into each branch.
       def body_lines(statements, links, parent)
         lines = []
         statements.each_with_index do |statement, index|
@@ -117,12 +118,12 @@ module GretelX
           elsif (conditional_parent = conditional_parent_target(statement, parent))
             parent = conditional_parent
           elsif calls_crumb_dsl?(statement)
-            unless conditional?(statement) && index == statements.size - 1
+            unless conditional?(statement)
               raise unconvertible("crumb :#{key} calls link or parent inside #{summary(statement)}: left out, " \
                                   "convert it by hand", statement)
             end
 
-            return lines + conditional_lines(statement, links, parent)
+            return lines + conditional_lines(statement, statements.drop(index + 1), links, parent)
           else
             lines.concat(fragment(statement).split("\n"))
           end
@@ -130,32 +131,43 @@ module GretelX
         lines + result_lines(links, parent)
       end
 
-      def conditional_lines(node, links, parent)
-        predicate = fragment(node.predicate)
-        if node.is_a?(Prism::UnlessNode)
-          negative_lines = body_lines(statements_of(node.statements), links, parent)
-          positive_lines = body_lines(statements_of(node.else_clause&.statements), links, parent)
+      def conditional_lines(node, rest, links, parent)
+        branch_lines = ->(statements) { body_lines(statements_of(statements) + rest, links, parent) }
+        case node
+        when Prism::UnlessNode
+          predicate = fragment(node.predicate)
+          negative_lines = branch_lines.call(node.statements)
+          positive_lines = branch_lines.call(node.else_clause&.statements)
           return ["unless #{predicate}", *indent(negative_lines), "end"] if positive_lines.empty?
 
-          return ["if #{predicate}", *indent(positive_lines), "else", *indent(negative_lines), "end"]
+          ["if #{predicate}", *indent(positive_lines), "else", *indent(negative_lines), "end"]
+        when Prism::CaseNode
+          lines = [node.predicate ? "case #{fragment(node.predicate)}" : "case"]
+          node.conditions.each do |condition|
+            lines << "when #{condition.conditions.map { |value| fragment(value) }.join(", ")}"
+            lines.concat(indent(branch_lines.call(condition.statements)))
+          end
+          else_lines = branch_lines.call(node.else_clause&.statements)
+          lines.push("else", *indent(else_lines)) if else_lines.any?
+          lines << "end"
+        else
+          lines = ["if #{fragment(node.predicate)}", *indent(branch_lines.call(node.statements))]
+          subsequent = node.subsequent
+          while subsequent.is_a?(Prism::IfNode)
+            lines << "elsif #{fragment(subsequent.predicate)}"
+            lines.concat(indent(branch_lines.call(subsequent.statements)))
+            subsequent = subsequent.subsequent
+          end
+          else_lines = branch_lines.call(subsequent&.statements)
+          lines.push("else", *indent(else_lines)) if else_lines.any?
+          lines << "end"
         end
-
-        lines = ["if #{predicate}", *indent(body_lines(statements_of(node.statements), links, parent))]
-        subsequent = node.subsequent
-        while subsequent.is_a?(Prism::IfNode)
-          lines << "elsif #{fragment(subsequent.predicate)}"
-          lines.concat(indent(body_lines(statements_of(subsequent.statements), links, parent)))
-          subsequent = subsequent.subsequent
-        end
-        else_lines = body_lines(statements_of(subsequent&.statements), links, parent)
-        lines.push("else", *indent(else_lines)) if else_lines.any?
-        lines << "end"
       end
 
       # `parent :a` in one branch and `parent :b` in the other: a single crumb whose parent is a ternary. A
       # branch without a parent keeps the one set before the conditional, as gretel does.
       def conditional_parent_target(node, previous_parent)
-        return unless conditional?(node)
+        return unless node in Prism::IfNode | Prism::UnlessNode
 
         else_node = node.is_a?(Prism::IfNode) ? node.subsequent : node.else_clause
         return if else_node.is_a?(Prism::IfNode)
@@ -267,7 +279,7 @@ module GretelX
       end
 
       def conditional?(node)
-        node in Prism::IfNode | Prism::UnlessNode
+        node in Prism::IfNode | Prism::UnlessNode | Prism::CaseNode
       end
 
       def statements_of(node)
