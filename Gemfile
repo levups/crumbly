@@ -19,4 +19,5 @@ end
 
 group :development do
   gem "benchmark-ips", require: false
+  gem "rouge", "5.1.0" # pinned: docs:highlight:check compares its output with the committed pages
 end
