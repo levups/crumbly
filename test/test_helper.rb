@@ -102,9 +102,9 @@ end
 
 ALICE = Customer.new(id: 7, name: "Alice")
 ORDER = Order.new(id: 42, number: "2026-0042", customer: ALICE)
-AUDIO = Category.new(id: 1, name: "Audio")
-SPEAKERS = Category.new(id: 2, name: "Speakers", parent: AUDIO)
-BOOKSHELF = Category.new(id: 3, name: "Bookshelf speakers", parent: SPEAKERS)
+BOOKS = Category.new(id: 1, name: "Books")
+FICTION = Category.new(id: 2, name: "Fiction", parent: BOOKS)
+NOVELS = Category.new(id: 3, name: "Novels", parent: FICTION)
 POST = Post.new(id: 5, title: "Hello")
 COMMENT = Comment.new(id: 9, body: "First!")
 
@@ -202,7 +202,7 @@ module Admin
 
   class CategoriesController < ApplicationController
     def show
-      @category = BOOKSHELF
+      @category = NOVELS
       render inline: "<% breadcrumb @category %>#{OrdersController::TRAIL}"
     end
   end
@@ -280,7 +280,7 @@ module Storefront
 
   class CategoriesController < ApplicationController
     def show
-      render inline: "<% breadcrumb SPEAKERS %>#{Admin::OrdersController::TRAIL}"
+      render inline: "<% breadcrumb FICTION %>#{Admin::OrdersController::TRAIL}"
     end
   end
 end

@@ -28,9 +28,9 @@ class DerivedCallSitesTest < ActiveSupport::TestCase
       assert_equal [
         "customers/show.html.erb:1: breadcrumb :customer, @customer (show derives the crumb of @customer)",
         "orders/_form.html.erb:1: breadcrumb :generic_form, order (only new and edit views derive a form's trail)",
-        "orders/edit.html.haml:1: breadcrumb(:generic_form, @order) (edit derives « Edit » under the record)",
+        'orders/edit.html.haml:1: breadcrumb(:generic_form, @order) (edit derives "Edit" under the record)',
         "orders/index.html.erb:1: breadcrumb :orders (index derives the orders crumb)",
-        "orders/new.html.erb:2: breadcrumb :generic_form, @order (new derives « New » under the collection)",
+        'orders/new.html.erb:2: breadcrumb :generic_form, @order (new derives "New" under the collection)',
         "orders/show.html.slim:1: breadcrumb @order (show derives the crumb of @order)"
       ], call_sites
       VIEWS.each { |path, content| assert_equal content, File.read("#{directory}/#{path}") }

@@ -3,8 +3,8 @@
 Breadcrumbs for Rails (gem `gretelx`, module `GretelX`): one `GretelX::Trail` class per namespace, trails derived
 from the routes, checked in tests (`GretelX.verify!`), plus `gretelx-convert` and `GretelX::Oracle` to migrate from
 gretel. By Level UP Solutions, in the next-gen-gems organization. The README is the user documentation, `docs/` the
-GitHub Pages site: keep both in step with the code, and `CHANGELOG.md`'s Unreleased section with every user-visible
-change.
+GitHub Pages site: keep both in step with the code. A user-visible change goes in an `## Unreleased` section on top
+of `CHANGELOG.md`, added if missing.
 
 ## Compatibility
 

@@ -94,7 +94,10 @@ td.number, th.number { text-align: right; font-variant-numeric: tabular-nums; }
 
 .left-out { max-width: var(--measure); padding-left: 1.25rem; }
 
-footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--rail); color: var(--muted); font-size: 0.9375rem; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--rail); color: var(--muted); font-size: 0.9375rem; display: flex; gap: 0.5rem 1.5rem; flex-wrap: wrap; align-items: baseline; }
+footer p { margin: 0; }
+footer ul { display: flex; gap: 0.25rem 1rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+footer a[aria-current="page"] { font-weight: 600; }
 
 @media (prefers-reduced-motion: no-preference) {
   .column-bar { transition: height 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
@@ -152,9 +155,6 @@ p code, li code, .rule-message code { overflow-wrap: anywhere; }
 .skip-link { position: absolute; left: 1rem; top: -3rem; background: var(--ink); color: var(--ground); padding: 0.5rem 0.9rem; border-radius: 3px; }
 .skip-link:focus { top: 1rem; }
 
-/* Footer shared by the four Next Gen Gems sites. */
-footer nav { display: flex; gap: 0.25rem 1rem; flex-wrap: wrap; }
-footer a[aria-current="page"] { font-weight: 600; }
 
 /* Pages of reference tables and side-by-side cases. */
 .prose ol { padding-left: 1.25rem; }

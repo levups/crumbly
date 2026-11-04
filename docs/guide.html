@@ -139,13 +139,13 @@
           <tbody>
             <tr><td><code>index</code></td><td>The collection: your <code>posts</code> crumb, or else the model’s human plural name linked to the <code>index</code> route.</td></tr>
             <tr><td><code>show</code></td><td>The record: your <code>post</code> crumb, or else its <code>to_s</code> linked to the <code>show</code> route, under the collection.</td></tr>
-            <tr><td><code>new</code>, <code>create</code></td><td>« New » under the collection.</td></tr>
-            <tr><td><code>edit</code>, <code>update</code></td><td>« Edit » under the record.</td></tr>
+            <tr><td><code>new</code>, <code>create</code></td><td>"New" under the collection.</td></tr>
+            <tr><td><code>edit</code>, <code>update</code></td><td>"Edit" under the record.</td></tr>
           </tbody>
         </table>
         <p>The record is the one the controller already loaded, <code>@post</code> in <code>PostsController</code>: it is never looked up again, and without it <code>show</code> and <code>edit</code> derive no trail. A controller with no <code>index</code> or <code>show</code> route still gets its level, without a link. Other actions derive nothing.</p>
         <h3>Labels</h3>
-        <p>« New » and « Edit » are translated through <code>gretelx.new</code> and <code>gretelx.edit</code>:</p>
+        <p>"New" and "Edit" are translated through <code>gretelx.new</code> and <code>gretelx.edit</code>:</p>
 <pre><code class="language-yaml"><span class="c1"># config/locales/es.yml</span>
 <span class="na">es</span><span class="pi">:</span>
   <span class="na">gretelx</span><span class="pi">:</span>
@@ -255,15 +255,17 @@
     </section>
   </main>
 
-  <footer>
-    <span>Next Gen Gems, by Level UP Solutions</span>
+  <footer class="family">
+    <p><a href="https://github.com/next-gen-gems">Next Gen Gems</a>, by Level UP Solutions</p>
     <nav aria-label="Next Gen Gems">
-      <a href="https://next-gen-gems.github.io/slimx/">SlimX</a>
-      <a href="https://next-gen-gems.github.io/browserx/">BrowserX</a>
-      <a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a>
-      <a href="https://next-gen-gems.github.io/gretelx/" aria-current="page">GretelX</a>
+      <ul>
+        <li><a href="https://next-gen-gems.github.io/slimx/">SlimX</a></li>
+        <li><a href="https://next-gen-gems.github.io/browserx/">BrowserX</a></li>
+        <li><a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a></li>
+        <li><a href="https://next-gen-gems.github.io/gretelx/" aria-current="page">GretelX</a></li>
+      </ul>
     </nav>
-    <a href="https://github.com/next-gen-gems/gretelx">Source on GitHub</a>
+    <p><a href="https://github.com/next-gen-gems/gretelx">Source on GitHub</a></p>
   </footer>
 </div>
 </body>
