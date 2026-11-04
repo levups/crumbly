@@ -255,6 +255,9 @@ It eager-loads the app and reads the source of every crumb (and of the private h
 
 - every parent a crumb calls is a crumb, and every `_path` or `_url` it calls is a route helper;
 - every `breadcrumb :name` in `app/views` and `app/controllers` names a crumb some trail defines;
+- every crumb is called with as many arguments as it takes, by its views and by other crumbs: gretel ignored
+  extra arguments and passed `nil` for missing ones, a method raises `ArgumentError` (a view call spread over
+  several lines, or with a splat, is not counted);
 - every crumb is reachable: called by another crumb, by a view or controller (`breadcrumb :name`,
   `breadcrumb @record`), by a derived trail (the collection and record of a routed controller), or named after
   a model. The others are dead, and fail the test.
@@ -319,14 +322,17 @@ files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crum
 | `parent :other, order` | `parent: other(order)` |
 | `parent record` | `parent: crumb_for(record)` |
 | `parent :a` and `parent :b` in an `if`/`else` | `parent: condition ? a : b` |
-| `link` and `parent` inside a final `if`, `elsif`, `unless` | one `crumb` call per branch |
+| `parent :a`, then `parent :b if condition` | `parent: condition ? b : a` |
+| `link` and `parent` inside an `if`, `elsif`, `unless` or `case`, modifiers included | one `crumb` call per branch, the statements after the conditional copied into each |
 | `t(".x")`, `current_user`: view helpers | `helpers.t(".x")`, `helpers.current_user`; route helpers stay bare |
-| `%i[a b].each { \|name\| crumb name do ... end }`, `{a: "A"}.each` | one method per element |
+| `%i[a b].each { \|name\| crumb name do ... end }`, `{a: [:post, Comment]}.each { \|name, (parent, model)\| ... }` | one method per element |
+| a local assigned before a crumb reads it: `path = :"admin_#{name}_path"` | copied into each crumb reading it, a literal written in place |
+| `label = ->(record) { ... }` at the top of the file, reading no other local | a private method, `label.call(post)` becoming `label(post)` |
 
-It lists, without converting them: a loop over anything but a literal array or hash, `link` or `parent`
-anywhere else than at the top of the crumb or in its final conditional, `link` options (`title:`, `class:`),
-crumbs whose name is a Ruby keyword or an existing method (`display`, `test`), and any statement that is not
-a crumb. Comments are kept above the method they precede.
+It lists, without converting them: a loop over anything but a literal array or hash (of symbols, strings,
+numbers and constants), `link` or `parent` inside anything but a conditional (a loop, a block), `link` options
+(`title:`, `class:`), crumbs whose name is a Ruby keyword or an existing method (`display`, `test`), and any
+statement that is not a crumb, a loop or a local. Comments are kept above the method they precede.
 
 The codemod is built on Prism 1.2 or later: Ruby 3.4 ships it, and on Ruby 3.3 add `gem "prism"` to the
 development group.

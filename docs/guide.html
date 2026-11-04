@@ -204,6 +204,7 @@
         <ul>
           <li>every parent a crumb calls is a crumb, and every <code>_path</code> or <code>_url</code> it calls is a route helper;</li>
           <li>every <code>breadcrumb :name</code> in <code>app/views</code> and <code>app/controllers</code> names a crumb some trail defines;</li>
+          <li>every crumb is called with as many arguments as it takes, by its views and by other crumbs: gretel ignored extra arguments and passed <code>nil</code> for missing ones, a method raises <code>ArgumentError</code> (a view call spread over several lines, or with a splat, is not counted);</li>
           <li>every crumb is reachable: called by another crumb, by a view or controller (<code>breadcrumb :name</code>, <code>breadcrumb @record</code>), by a derived trail (the collection and record of a routed controller), or named after a model. The others are dead, and fail the test.</li>
         </ul>
         <p><code>GretelX.verify!</code> does the same outside Minitest: it raises <code>GretelX::InvalidTrail</code> with every problem in one message, and returns the dead crumbs (<code>["Admin::Breadcrumbs#drafts"]</code>). Both take <code>trail_classes:</code>, <code>routes:</code> and <code>sources:</code> (the directories scanned for <code>breadcrumb</code> calls).</p>

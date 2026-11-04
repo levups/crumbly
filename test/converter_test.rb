@@ -108,6 +108,158 @@ class ConverterTest < ActiveSupport::TestCase
     GRETEL
   end
 
+  test "a parent set under a condition falls back on the parent set before it" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def comment(comment)
+        crumb comment.to_s,
+          parent: comment.reply? ? comment(comment.parent) : (post(comment.post) if comment.post)
+      end
+
+      def note(note)
+        crumb "Note",
+          parent: note.private? ? notes : (note.archived? ? archive : (order(note.order) if note.order))
+      end
+    RUBY
+      crumb :comment do |comment|
+        link comment.to_s
+        parent :post, comment.post if comment.post
+        parent :comment, comment.parent if comment.reply?
+      end
+
+      crumb :note do |note|
+        link "Note"
+        parent :order, note.order if note.order
+        if note.archived?
+          parent :archive
+        end
+        parent :notes if note.private?
+      end
+    GRETEL
+  end
+
+  test "a condition that binds looser than the ternary is parenthesised" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def note(note)
+        crumb "Note",
+          parent: (note.draft? or note.hidden?) ? drafts : ((not note.public?) ? private_notes : notes)
+      end
+
+      def reply(reply)
+        crumb "Reply", parent: (comment = reply.comment) ? comment(comment) : comments
+      end
+    RUBY
+      crumb :note do |note|
+        link "Note"
+        parent :notes
+        parent :private_notes if not note.public?
+        parent :drafts if note.draft? or note.hidden?
+      end
+
+      crumb :reply do |reply|
+        link "Reply"
+        if comment = reply.comment
+          parent :comment, comment
+        else
+          parent :comments
+        end
+      end
+    GRETEL
+  end
+
+  test "a local assigned by the condition of a parent is assigned before it is read" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def note(note)
+        crumb "Note",
+          parent: (owner_name = note.owner&.model_name&.singular) ? public_send(owner_name.to_sym, note.owner) : nil
+      end
+    RUBY
+      crumb :note do |note|
+        link "Note"
+        if (owner_name = note.owner&.model_name&.singular)
+          parent owner_name.to_sym, note.owner
+        end
+      end
+    GRETEL
+  end
+
+  test "a conditional before other statements takes them into each of its branches" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def comment(comment)
+        if comment.new_record?
+          crumb "New comment", parent: (post(comment.post) if comment.post)
+        else
+          crumb comment.to_s, [:admin, comment], parent: (post(comment.post) if comment.post)
+        end
+      end
+
+      def reports(author = nil)
+        if author
+          crumb author.name, [:admin, author], parent: posts, links: [link("Reports", nil)]
+        else
+          crumb "Reports", parent: posts
+        end
+      end
+    RUBY
+      crumb :comment do |comment|
+        if comment.new_record?
+          link "New comment"
+        else
+          link comment.to_s, [:admin, comment]
+        end
+        parent :post, comment.post if comment.post
+      end
+
+      crumb :reports do |author|
+        link author.name, [:admin, author] if author
+        link "Reports"
+        parent :posts
+      end
+    GRETEL
+  end
+
+  test "a case becomes one crumb call per branch" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def returns(owner = nil)
+        case owner
+        when Order, Invoice
+          crumb "Returns", [:admin, owner, :returns], parent: crumb_for(owner)
+        when Customer
+          crumb "Returns", admin_customer_returns_path(owner), parent: customer(owner)
+        else
+          crumb "Returns", admin_returns_path
+        end
+      end
+
+      def notes(owner = nil)
+        case owner
+        when Post
+          crumb "Notes", parent: post(owner)
+        end
+      end
+    RUBY
+      crumb :returns do |owner = nil|
+        case owner
+        when Order, Invoice
+          link "Returns", [:admin, owner, :returns]
+          parent owner
+        when Customer
+          link "Returns", admin_customer_returns_path(owner)
+          parent :customer, owner
+        else
+          link "Returns", admin_returns_path
+        end
+      end
+
+      crumb :notes do |owner|
+        case owner
+        when Post
+          link "Notes"
+          parent :post, owner
+        end
+      end
+    GRETEL
+  end
+
   test "view helpers go through helpers, a parent named like a local goes through self" do
     assert_crumb <<~RUBY, <<~GRETEL
       def account(orders)
@@ -139,6 +291,96 @@ class ConverterTest < ActiveSupport::TestCase
         end
       end
     GRETEL
+  end
+
+  test "a loop may destructure its pairs, and yield constants" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def post_comments(record)
+        crumb Comment.model_name.human, parent: post(record)
+      end
+
+      def order_notes(record)
+        crumb Admin::Note.model_name.human, parent: order(record)
+      end
+    RUBY
+      {post_comments: [:post, Comment], order_notes: [:order, Admin::Note]}.each do |name, (parent_name, model)|
+        crumb name do |record|
+          link model.model_name.human
+          parent parent_name, record
+        end
+      end
+    GRETEL
+  end
+
+  test "a local a crumb reads is copied into its method, a literal written in place, a lambda made a method" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def drafts
+        label = title(:drafts)
+        crumb label, admin_drafts_path, parent: posts
+      end
+
+      def archives
+        label = title(:archives)
+        crumb label, admin_archives_path, parent: posts
+      end
+
+      private
+
+      # Drafts, Archives
+      def title(name)
+        name.to_s.humanize
+      end
+    RUBY
+      # Drafts, Archives
+      title = ->(name) { name.to_s.humanize }
+      parent_name = :posts
+
+      %i[drafts archives].each do |name|
+        path = :"admin_\#{name}_path"
+        label = title.call(name)
+        crumb name do
+          link label, public_send(path)
+          parent parent_name
+        end
+      end
+    GRETEL
+  end
+
+  test "a lambda reading other locals, or with numbered parameters, is copied; one read as a value is a method" do
+    result = GretelX::Converter.call({"breadcrumbs.rb" => <<~GRETEL})
+      prefix = "Admin"
+      name = "top"
+      short = -> { _1.to_s }
+      titled = ->(text) { "\#{prefix} \#{text}" }
+      upcased = ->(text) { text.upcase }
+      crumb :tags do |post|
+        link post.tags.map { |name| name.upcase }.join, "/tags"
+        link post.tags.map(&upcased).join
+        link titled.call(short.call(post))
+      end
+      name = "again"
+    GRETEL
+
+    assert_equal <<~RUBY, result.ruby
+      # frozen_string_literal: true
+
+      class Breadcrumbs < GretelX::Trail
+        def tags(post)
+          short = -> { _1.to_s }
+          titled = ->(text) { "\#{"Admin"} \#{text}" }
+          crumb post.tags.map { |name| name.upcase }.join, "/tags",
+            links: [link(post.tags.map(&method(:upcased)).join, nil), link(titled.call(short.call(post)), nil)]
+        end
+
+        private
+
+        def upcased(text)
+          text.upcase
+        end
+      end
+    RUBY
+    assert_equal ["breadcrumbs.rb:11: name is assigned again: a crumb above that reads it gets its first value, " \
+                  "where gretel read the last one"], result.notes.map(&:to_s)
   end
 
   test "a crumb a Trail cannot hold is listed, with the line inside its loop" do
