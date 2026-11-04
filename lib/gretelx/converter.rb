@@ -32,7 +32,6 @@ module GretelX
 
     Definition = Data.define(:key, :path, :line, :lines)
 
-    LOOP_METHODS = %i[each each_pair].freeze
     STATIC_NODES = [
       Prism::SymbolNode, Prism::StringNode, Prism::IntegerNode, Prism::FloatNode,
       Prism::NilNode, Prism::TrueNode, Prism::FalseNode
@@ -93,12 +92,11 @@ module GretelX
     end
 
     def crumb_call?(node)
-      node.is_a?(Prism::CallNode) && node.receiver.nil? && node.name == :crumb
+      node in Prism::CallNode[receiver: nil, name: :crumb]
     end
 
     def loop_call?(node)
-      node.is_a?(Prism::CallNode) && LOOP_METHODS.include?(node.name) && node.receiver &&
-        node.block.is_a?(Prism::BlockNode)
+      node in Prism::CallNode[name: :each | :each_pair, receiver: Prism::Node, block: Prism::BlockNode]
     end
 
     def define(crumb_definition, source, comments)
@@ -143,9 +141,7 @@ module GretelX
 
     def loop_parameter_names(block)
       parameters = block.parameters&.parameters
-      return unless parameters
-      return unless parameters.optionals.empty? && parameters.rest.nil? && parameters.posts.empty? &&
-        parameters.keywords.empty? && parameters.keyword_rest.nil? && parameters.block.nil?
+      return unless parameters in {optionals: [], rest: nil, posts: [], keywords: [], keyword_rest: nil, block: nil}
       return unless parameters.requireds.all?(Prism::RequiredParameterNode)
 
       parameters.requireds.map(&:name)
@@ -207,15 +203,13 @@ module GretelX
         edits << [node.location.start_offset, node.location.end_offset, value.source] if value
         return edits
       when Prism::CallNode
-        receiver = node.receiver
-        if node.name == :to_s && node.arguments.nil? && receiver.is_a?(Prism::LocalVariableReadNode) &&
-            receiver.depth == depth && (text = value_by_name[receiver.name]&.text)
+        if (node in {name: :to_s, arguments: nil, receiver: Prism::LocalVariableReadNode[depth: ^depth, name:]}) &&
+            (text = value_by_name[name]&.text)
           return edits << [node.location.start_offset, node.location.end_offset, text.inspect]
         end
       when Prism::EmbeddedStatementsNode
-        read = node.statements&.body&.first if node.statements&.body&.size == 1
-        if read.is_a?(Prism::LocalVariableReadNode) && read.depth == depth
-          text = value_by_name[read.name]&.text
+        if node in {statements: {body: [Prism::LocalVariableReadNode[depth: ^depth, name:]]}}
+          text = value_by_name[name]&.text
           if text&.match?(%r{\A[\w ./-]*\z})
             edits << [node.location.start_offset, node.location.end_offset, text]
             return edits

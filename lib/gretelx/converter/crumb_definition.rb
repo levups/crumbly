@@ -38,7 +38,7 @@ module GretelX
 
       def crumb_key
         argument = call.arguments&.arguments&.first
-        unless argument.is_a?(Prism::SymbolNode) || argument.is_a?(Prism::StringNode)
+        unless argument in Prism::SymbolNode | Prism::StringNode
           raise unconvertible("crumb key #{argument&.slice.inspect} is not a literal symbol: left out")
         end
 
@@ -61,7 +61,7 @@ module GretelX
       # crumb tests for nil gets a nil default, and so do the ones after it.
       def block_parameters_source
         parameters = block.parameters
-        if parameters.is_a?(Prism::NumberedParametersNode) || parameters.is_a?(Prism::ItParametersNode)
+        if parameters in Prism::NumberedParametersNode | Prism::ItParametersNode
           raise unconvertible("crumb :#{key} uses numbered parameters: left out")
         end
 
@@ -185,16 +185,13 @@ module GretelX
         target, *rest = arguments
         rest = rest.map { |argument| fragment(argument) }
         case target
-        when Prism::SymbolNode, Prism::StringNode
+        in Prism::SymbolNode | Prism::StringNode
           name = target.unescaped.to_sym
           raise unconvertible("parent :#{name} cannot be a method of a Trail: rename it", call) unless method_name?(name)
 
           crumb_method_call(name, rest)
-        when Prism::InterpolatedSymbolNode then "public_send(#{[fragment(target), *rest].join(", ")})"
-        when Prism::CallNode
-          return "public_send(#{[fragment(target), *rest].join(", ")})" if target.name == :to_sym
-
-          "crumb_for(#{[fragment(target), *rest].join(", ")})"
+        in Prism::InterpolatedSymbolNode | Prism::CallNode[name: :to_sym]
+          "public_send(#{[fragment(target), *rest].join(", ")})"
         else
           "crumb_for(#{[fragment(target), *rest].join(", ")})"
         end
@@ -230,7 +227,7 @@ module GretelX
           notes << "crumb :#{key}: link options #{options.slice} have no equivalent in GretelX: left out"
         end
         if arguments.empty? || arguments.size > 2 || link.block ||
-            arguments.any? { |argument| argument.is_a?(Prism::SplatNode) || argument.is_a?(Prism::KeywordHashNode) }
+            arguments.any? { |argument| argument in Prism::SplatNode | Prism::KeywordHashNode }
           raise unconvertible("crumb :#{key} calls #{summary(link)}: left out, convert it by hand", link)
         end
 
@@ -239,17 +236,17 @@ module GretelX
       end
 
       def crumb_dsl_call?(node, name)
-        node.is_a?(Prism::CallNode) && node.receiver.nil? && node.name == name && node.block.nil?
+        node in Prism::CallNode[receiver: nil, name: ^name, block: nil]
       end
 
       def calls_crumb_dsl?(node)
-        return true if node.is_a?(Prism::CallNode) && node.receiver.nil? && %i[link parent].include?(node.name)
+        return true if node in Prism::CallNode[receiver: nil, name: :link | :parent]
 
         node.compact_child_nodes.any? { |child| calls_crumb_dsl?(child) }
       end
 
       def conditional?(node)
-        node.is_a?(Prism::IfNode) || node.is_a?(Prism::UnlessNode)
+        node in Prism::IfNode | Prism::UnlessNode
       end
 
       def statements_of(node)
@@ -279,11 +276,8 @@ module GretelX
 
       # `send("admin_#{name}_path")` in a loop reads `admin_posts_path` once the loop is expanded.
       def static_send_name(node)
-        return unless node.is_a?(Prism::CallNode) && node.receiver.nil? && %i[send public_send].include?(node.name)
-
-        arguments = node.arguments&.arguments
-        name = arguments.first if arguments&.size == 1 && node.block.nil?
-        return unless name.is_a?(Prism::StringNode) || name.is_a?(Prism::SymbolNode)
+        return unless node in Prism::CallNode[receiver: nil, name: :send | :public_send, block: nil,
+          arguments: {arguments: [Prism::StringNode | Prism::SymbolNode => name]}]
 
         name.unescaped if name.unescaped.end_with?("_path", "_url") && name.unescaped.match?(/\A[a-z_][a-z0-9_]*\z/)
       end

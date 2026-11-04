@@ -70,9 +70,9 @@ module GretelX
     end
 
     # The crumb of a record, found by its model name: `parent: crumb_for(owner)` for a polymorphic parent.
-    def crumb_for(record, *arguments)
+    def crumb_for(record, *)
       name = crumb_name_for(record)
-      return public_send(name, record, *arguments) if name
+      return public_send(name, record, *) if name
 
       unknown_crumb("#{self.class} has no crumb for #{record.class}: define ##{record.model_name.singular}")
     end
@@ -89,7 +89,7 @@ module GretelX
     end
 
     def target_crumb(target, arguments)
-      return crumb_for(target, *arguments) unless target.is_a?(Symbol) || target.is_a?(String)
+      return crumb_for(target, *arguments) unless target in Symbol | String
 
       name = target.to_sym
       return public_send(name, *arguments) if self.class.crumb?(name)
