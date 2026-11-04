@@ -35,3 +35,13 @@ Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's Gemfile list.
   and `docs/benchmarks.html` come from the same run. A pure performance change never pins internals in tests.
 - Test and bench data stay generic (`Alice`, `Order 2026-0042`, `example.com`).
 - `.claude/hooks/rubocop.sh` autocorrects each Ruby file after an edit.
+
+## Changelog and releases
+
+- Every user-visible change adds its line under `## [Unreleased]` in `CHANGELOG.md`, in the same PR. A release
+  opens with a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT) and
+  **Fixed**, only those with entries. No version heading, date or link by hand: `bin/release` writes them.
+- `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` (README, Releasing), and
+  `.github/workflows/release.yml` publishes it. Both are the same in every next-gen-gems gem: change them in all
+  four at once.
+- RubyGems trusts the Release workflow (trusted publishing): never `gem push` from a machine.
