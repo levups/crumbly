@@ -339,12 +339,39 @@ development group.
 
 ### 2. Compare the trails
 
-While gretel is still bundled, a test draws each trail with both gems and lists the differences in labels and
-URLs. gretel shows a crumb's extra links as levels of their own: the comparison does the same with `links`.
+While gretel is still bundled, the tests draw each trail with both gems and list the differences in labels and
+URLs. gretel shows a crumb's extra links as levels of their own: the comparison does the same with `links`. Keep
+gretel in the test group with `require: false`: `gretelx/oracle` loads it, without the view helpers whose
+`breadcrumb` would replace GretelX's.
 
 ```ruby
+# Gemfile, on the migration branch
+gem "gretel", require: false, group: :test
+```
+
+The views already call `breadcrumb` the way GretelX expects, so the app's own controller, integration and system
+tests can do the comparing. With `GretelX::Oracle.watch` in the test helper, every page they render is drawn by
+gretel too, from the same `breadcrumb` call:
+
+```ruby
+# test/test_helper.rb, once the app is loaded
 require "gretelx/oracle"
 
+GretelX::Oracle.watch
+Minitest.after_run do
+  puts GretelX::Oracle.differences.to_a, GretelX::Oracle.redundant_calls.to_a
+end
+```
+
+`differences` holds each page whose trail changed, gretel's and GretelX's side by side, including the pages
+without a `breadcrumb` call, which gretel left without a trail and which now derive one. `redundant_calls`
+holds the calls whose trail the action derives anyway. `watch { ... }` watches a block only. Parallel test
+workers each fill their own lists, which `after_run` in the parent process never sees: run the watched suite
+with `PARALLEL_WORKERS=1`. A call gretel cannot draw shows as a difference, with gretel's error.
+
+For the crumbs no test renders, `compare` takes the calls to check:
+
+```ruby
 class BreadcrumbsMigrationTest < ActionView::TestCase
   test "GretelX draws the trails gretel drew" do
     differences = GretelX::Oracle.compare(view, Admin::Breadcrumbs, [
@@ -360,7 +387,8 @@ end
 
 `--views` lists the `breadcrumb` calls that a derived trail may now cover: `:generic_form` (or `:new`,
 `:edit`) in new and edit views, `breadcrumb @order` in a show view, `breadcrumb :orders` in an index view.
-Nothing is deleted: a call goes once its view shows the same trail without it.
+Nothing is deleted: a call goes once its view shows the same trail without it, which is what
+`GretelX::Oracle.redundant_calls` lists for the pages the tests render.
 
 ### 4. Remove gretel
 
