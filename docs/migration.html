@@ -59,6 +59,7 @@
             <tr><td><code>parent :other, order</code></td><td><code>parent: other(order)</code></td></tr>
             <tr><td><code>parent record</code></td><td><code>parent: crumb_for(record)</code></td></tr>
             <tr><td><code>parent :a</code> and <code>parent :b</code> in an <code>if</code>/<code>else</code></td><td><code>parent: condition ? a : b</code></td></tr>
+            <tr><td><code>parent :a</code>, then <code>parent :b if condition</code></td><td><code>parent: condition ? b : a</code></td></tr>
             <tr><td><code>link</code> and <code>parent</code> inside a final <code>if</code>, <code>elsif</code>, <code>unless</code></td><td>one <code>crumb</code> call per branch</td></tr>
             <tr><td><code>t(".x")</code>, <code>current_user</code>: view helpers</td><td><code>helpers.t(".x")</code>, <code>helpers.current_user</code>; route helpers stay bare</td></tr>
             <tr><td><code>%i[a b].each { |name| crumb name do ... end }</code>, <code>{a: "A"}.each</code></td><td>one method per element</td></tr>
