@@ -77,4 +77,18 @@ class OracleWatchTest < IntegrationTestCase
 
     assert_empty GretelX::Oracle.differences
   end
+
+  test "a call gretel cannot draw is a difference" do
+    controller = Admin::OrdersController.new
+    controller.request = ActionDispatch::TestRequest.create
+    controller.action_name = "show"
+    view = controller.view_context
+    GretelX::Oracle.observe(view, [:order_notes, [ORDER]], Admin::Breadcrumbs.resolve(view, :order_notes, ORDER))
+
+    assert_equal ["admin/orders#show, breadcrumb :order_notes, #<Order 42>\n  gretel:     gretel raised " \
+                  "ArgumentError: Breadcrumb :order_notes not found.\n  gretelx: Home (/admin) > Orders (/admin/orders) > " \
+                  "Order 2026-0042 (/admin/orders/42) > Invoice (/admin/orders/42/invoice.pdf) > " \
+                  "Internal notes (/admin/orders/42/notes)"],
+      GretelX::Oracle.differences.map(&:to_s)
+  end
 end

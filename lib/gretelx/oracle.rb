@@ -67,13 +67,14 @@ module GretelX
       # the action derives anyway to `redundant_calls`.
       def watch
         ViewHelpers.prepend(Watch) unless ViewHelpers <= Watch
+        watching = @watching
         @watching = true
         return unless block_given?
 
         begin
           yield
         ensure
-          @watching = false
+          @watching = watching
         end
       end
 
@@ -85,7 +86,7 @@ module GretelX
         ::Gretel::Crumbs.reload_if_needed
         target, arguments = breadcrumb_call
         page = "#{view.controller.controller_path}##{view.controller.action_name}"
-        gretel = target ? gretel_trail(view, target, arguments) : []
+        gretel = target ? gretel_trail_or_error(view, target, arguments) : []
         difference = Difference.new(target:, arguments:, gretel:, gretelx: flatten(levels), page:)
         redundant = target && derived_trail(view) == gretel
         @mutex.synchronize do
@@ -117,6 +118,13 @@ module GretelX
       end
 
       private
+
+      # A call gretel cannot draw (a crumb renamed during the migration) is a difference, not a failing test.
+      def gretel_trail_or_error(view, target, arguments)
+        gretel_trail(view, target, arguments)
+      rescue => exception
+        [["gretel raised #{exception.class}: #{exception.message}", nil]]
+      end
 
       def flatten(levels)
         levels.flat_map do |level|

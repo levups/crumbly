@@ -359,7 +359,9 @@ end
 
 `differences` holds each page whose trail changed, gretel's and GretelX's side by side, including the pages
 without a `breadcrumb` call, which gretel left without a trail and which now derive one. `redundant_calls`
-holds the calls whose trail the action derives anyway. `watch { ... }` watches a block only.
+holds the calls whose trail the action derives anyway. `watch { ... }` watches a block only. Parallel test
+workers each fill their own lists, which `after_run` in the parent process never sees: run the watched suite
+with `PARALLEL_WORKERS=1`. A call gretel cannot draw shows as a difference, with gretel's error.
 
 For the crumbs no test renders, `compare` takes the calls to check:
 
