@@ -108,6 +108,51 @@ class ConverterTest < ActiveSupport::TestCase
     GRETEL
   end
 
+  test "a parent set under a condition falls back on the parent set before it" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def comment(comment)
+        crumb comment.to_s,
+          parent: comment.reply? ? comment(comment.parent) : (post(comment.post) if comment.post)
+      end
+
+      def note(note)
+        crumb "Note",
+          parent: note.private? ? notes : (note.archived? ? archive : (order(note.order) if note.order))
+      end
+    RUBY
+      crumb :comment do |comment|
+        link comment.to_s
+        parent :post, comment.post if comment.post
+        parent :comment, comment.parent if comment.reply?
+      end
+
+      crumb :note do |note|
+        link "Note"
+        parent :order, note.order if note.order
+        if note.archived?
+          parent :archive
+        end
+        parent :notes if note.private?
+      end
+    GRETEL
+  end
+
+  test "a local assigned by the condition of a parent is assigned before it is read" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      def note(note)
+        crumb "Note",
+          parent: (owner_name = note.owner&.model_name&.singular) ? public_send(owner_name.to_sym, note.owner) : nil
+      end
+    RUBY
+      crumb :note do |note|
+        link "Note"
+        if (owner_name = note.owner&.model_name&.singular)
+          parent owner_name.to_sym, note.owner
+        end
+      end
+    GRETEL
+  end
+
   test "view helpers go through helpers, a parent named like a local goes through self" do
     assert_crumb <<~RUBY, <<~GRETEL
       def account(orders)
