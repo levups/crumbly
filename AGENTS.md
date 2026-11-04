@@ -36,6 +36,10 @@ Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's Gemfile list.
 - Test and bench data stay generic (`Alice`, `Order 2026-0042`, `example.com`).
 - `.claude/hooks/rubocop.sh` autocorrects each Ruby file after an edit.
 
+## Code style
+
+Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't settle.
+
 ## Changelog and releases
 
 - Every user-visible change adds its line under `## [Unreleased]` in `CHANGELOG.md`, in the same PR. A release

@@ -40,8 +40,8 @@
         <p>The shape stays the same, a crumb that names its parent, and view call sites barely change: <code>breadcrumb :order, @order</code> and <code>breadcrumb @order</code> work as they did. What moves is <code>config/breadcrumbs.rb</code>, split into one class per namespace, and a codemod writes that class.</p>
         <p>An app switches in one go: there is no compatibility layer, and the two gems do not run side by side in production. gretel stays in the Gemfile of the migration branch only, for the comparison test below.</p>
         <h3>1. Convert the breadcrumbs file</h3>
-<pre><code>bundle exec gretelx-convert config/breadcrumbs.rb --namespace Admin \
-  --output app/breadcrumbs/admin/breadcrumbs.rb --views app/views/admin</code></pre>
+<pre><code class="language-sh">bundle <span class="nb">exec </span>gretelx-convert config/breadcrumbs.rb <span class="nt">--namespace</span> Admin <span class="se">\</span>
+  <span class="nt">--output</span> app/breadcrumbs/admin/breadcrumbs.rb <span class="nt">--views</span> app/views/admin</code></pre>
         <p>It writes <code>Admin::Breadcrumbs</code> and prints, with their line, what it left out or converted with a loss. Several files (<code>config/breadcrumbs/*.rb</code>) make one class, the later definition of a crumb winning as in gretel.</p>
         <table class="options">
           <thead><tr><th scope="col">gretel</th><th scope="col">GretelX</th></tr></thead>
@@ -61,17 +61,17 @@
         <p>The codemod is built on Prism 1.2 or later: Ruby 3.4 ships it, and on Ruby 3.3 add <code>gem "prism"</code> to the development group.</p>
         <h3>2. Compare the trails</h3>
         <p>While gretel is still bundled, a test draws each trail with both gems and lists the differences in labels and URLs. gretel shows a crumb’s extra links as levels of their own: the comparison does the same with <code>links</code>.</p>
-<pre><code>require "gretelx/oracle"
+<pre><code class="language-ruby"><span class="nb">require</span> <span class="s2">"gretelx/oracle"</span>
 
-class BreadcrumbsMigrationTest &lt; ActionView::TestCase
-  test "GretelX draws the trails gretel drew" do
-    differences = GretelX::Oracle.compare(view, Admin::Breadcrumbs, [
-      [:orders], [:order, orders(:alice)], [orders(:alice)], [:returns], [:returns, customers(:alice)]
-    ])
+<span class="k">class</span> <span class="nc">BreadcrumbsMigrationTest</span> <span class="o">&lt;</span> <span class="no">ActionView</span><span class="o">::</span><span class="no">TestCase</span>
+  <span class="nb">test</span> <span class="s2">"GretelX draws the trails gretel drew"</span> <span class="k">do</span>
+    <span class="n">differences</span> <span class="o">=</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">compare</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="no">Admin</span><span class="o">::</span><span class="no">Breadcrumbs</span><span class="p">,</span> <span class="p">[</span>
+      <span class="p">[</span><span class="ss">:orders</span><span class="p">],</span> <span class="p">[</span><span class="ss">:order</span><span class="p">,</span> <span class="n">orders</span><span class="p">(</span><span class="ss">:alice</span><span class="p">)],</span> <span class="p">[</span><span class="n">orders</span><span class="p">(</span><span class="ss">:alice</span><span class="p">)],</span> <span class="p">[</span><span class="ss">:returns</span><span class="p">],</span> <span class="p">[</span><span class="ss">:returns</span><span class="p">,</span> <span class="n">customers</span><span class="p">(</span><span class="ss">:alice</span><span class="p">)]</span>
+    <span class="p">])</span>
 
-    assert_empty differences, differences.join("\n")
-  end
-end</code></pre>
+    <span class="n">assert_empty</span> <span class="n">differences</span><span class="p">,</span> <span class="n">differences</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
         <h3>3. Review the call sites</h3>
         <p><code>--views</code> lists the <code>breadcrumb</code> calls that a derived trail may now cover: <code>:generic_form</code> (or <code>:new</code>, <code>:edit</code>) in new and edit views, <code>breadcrumb @order</code> in a show view, <code>breadcrumb :orders</code> in an index view. Nothing is deleted: a call goes once its view shows the same trail without it. Area prefixes in the keys (<code>:admin_order</code>) can go too, since the namespace does that job.</p>
         <h3>4. Remove gretel</h3>
@@ -89,46 +89,46 @@ end</code></pre>
       <div class="split">
         <div>
           <p class="code-label">breadcrumbs_on_rails</p>
-<pre><code>class Admin::OrdersController &lt; Admin::BaseController
-  add_breadcrumb "Home", :admin_root_path
-  add_breadcrumb "Orders", :admin_orders_path
+<pre><code class="language-ruby"><span class="k">class</span> <span class="nc">Admin::OrdersController</span> <span class="o">&lt;</span> <span class="no">Admin</span><span class="o">::</span><span class="no">BaseController</span>
+  <span class="n">add_breadcrumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="ss">:admin_root_path</span>
+  <span class="n">add_breadcrumb</span> <span class="s2">"Orders"</span><span class="p">,</span> <span class="ss">:admin_orders_path</span>
 
-  def show
-    @order = Order.find(params[:id])
-    add_breadcrumb @order.to_s, admin_order_path(@order)
-  end
+  <span class="k">def</span> <span class="nf">show</span>
+    <span class="vi">@order</span> <span class="o">=</span> <span class="no">Order</span><span class="p">.</span><span class="nf">find</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="ss">:id</span><span class="p">])</span>
+    <span class="n">add_breadcrumb</span> <span class="vi">@order</span><span class="p">.</span><span class="nf">to_s</span><span class="p">,</span> <span class="n">admin_order_path</span><span class="p">(</span><span class="vi">@order</span><span class="p">)</span>
+  <span class="k">end</span>
 
-  def messages
-    @order = Order.find(params[:id])
-    add_breadcrumb @order.to_s, admin_order_path(@order)
-    add_breadcrumb "Messages", messages_admin_order_path(@order)
-  end
-end</code></pre>
-<pre><code>&lt;%= render_breadcrumbs separator: " / " %&gt;</code></pre>
+  <span class="k">def</span> <span class="nf">messages</span>
+    <span class="vi">@order</span> <span class="o">=</span> <span class="no">Order</span><span class="p">.</span><span class="nf">find</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="ss">:id</span><span class="p">])</span>
+    <span class="n">add_breadcrumb</span> <span class="vi">@order</span><span class="p">.</span><span class="nf">to_s</span><span class="p">,</span> <span class="n">admin_order_path</span><span class="p">(</span><span class="vi">@order</span><span class="p">)</span>
+    <span class="n">add_breadcrumb</span> <span class="s2">"Messages"</span><span class="p">,</span> <span class="n">messages_admin_order_path</span><span class="p">(</span><span class="vi">@order</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+<pre><code class="language-erb"><span class="cp">&lt;%=</span> <span class="n">render_breadcrumbs</span> <span class="ss">separator: </span><span class="s2">" / "</span> <span class="cp">%&gt;</span></code></pre>
         </div>
         <div>
           <p class="code-label">GretelX</p>
-<pre><code>module Admin
-  class Breadcrumbs &lt; GretelX::Trail
-    def root
-      crumb "Home", admin_root_path
-    end
+<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="k">def</span> <span class="nf">root</span>
+      <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
+    <span class="k">end</span>
 
-    def orders
-      crumb "Orders", admin_orders_path
-    end
+    <span class="k">def</span> <span class="nf">orders</span>
+      <span class="n">crumb</span> <span class="s2">"Orders"</span><span class="p">,</span> <span class="n">admin_orders_path</span>
+    <span class="k">end</span>
 
-    def order(order)
-      crumb order.to_s, admin_order_path(order), parent: orders
-    end
+    <span class="k">def</span> <span class="nf">order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+      <span class="n">crumb</span> <span class="n">order</span><span class="p">.</span><span class="nf">to_s</span><span class="p">,</span> <span class="n">admin_order_path</span><span class="p">(</span><span class="n">order</span><span class="p">),</span> <span class="ss">parent: </span><span class="n">orders</span>
+    <span class="k">end</span>
 
-    def order_messages(order)
-      crumb "Messages", messages_admin_order_path(order), parent: order(order)
-    end
-  end
-end</code></pre>
-<pre><code>&lt;%# app/views/admin/orders/messages.html.erb %&gt;
-&lt;% breadcrumb :order_messages, @order %&gt;</code></pre>
+    <span class="k">def</span> <span class="nf">order_messages</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+      <span class="n">crumb</span> <span class="s2">"Messages"</span><span class="p">,</span> <span class="n">messages_admin_order_path</span><span class="p">(</span><span class="n">order</span><span class="p">),</span> <span class="ss">parent: </span><span class="n">order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+<pre><code class="language-erb"><span class="c">&lt;%# app/views/admin/orders/messages.html.erb %&gt;</span>
+<span class="cp">&lt;%</span> <span class="n">breadcrumb</span> <span class="ss">:order_messages</span><span class="p">,</span> <span class="vi">@order</span> <span class="cp">%&gt;</span></code></pre>
           <p class="code-label">index and show find their crumbs on their own; without <code>orders</code> and <code>order</code>, they would still derive « Orders » and the order’s <code>to_s</code></p>
         </div>
       </div>
@@ -152,44 +152,44 @@ end</code></pre>
       <div class="split">
         <div>
           <p class="code-label">loaf</p>
-<pre><code>class Admin::CategoriesController &lt; Admin::BaseController
-  breadcrumb "Home", :admin_root_path
-  breadcrumb "Categories", :admin_categories_path
+<pre><code class="language-ruby"><span class="k">class</span> <span class="nc">Admin::CategoriesController</span> <span class="o">&lt;</span> <span class="no">Admin</span><span class="o">::</span><span class="no">BaseController</span>
+  <span class="n">breadcrumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="ss">:admin_root_path</span>
+  <span class="n">breadcrumb</span> <span class="s2">"Categories"</span><span class="p">,</span> <span class="ss">:admin_categories_path</span>
 
-  def show
-    @category = Category.find(params[:id])
-    @category.ancestors.each do |ancestor|
-      breadcrumb ancestor.name, admin_category_path(ancestor)
-    end
-    breadcrumb @category.name, admin_category_path(@category)
-  end
-end</code></pre>
-<pre><code>&lt;% breadcrumb_trail do |crumb| %&gt;
-  &lt;li&gt;&lt;%= link_to crumb.name, crumb.url %&gt;&lt;/li&gt;
-&lt;% end %&gt;</code></pre>
+  <span class="k">def</span> <span class="nf">show</span>
+    <span class="vi">@category</span> <span class="o">=</span> <span class="no">Category</span><span class="p">.</span><span class="nf">find</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="ss">:id</span><span class="p">])</span>
+    <span class="vi">@category</span><span class="p">.</span><span class="nf">ancestors</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">ancestor</span><span class="o">|</span>
+      <span class="n">breadcrumb</span> <span class="n">ancestor</span><span class="p">.</span><span class="nf">name</span><span class="p">,</span> <span class="n">admin_category_path</span><span class="p">(</span><span class="n">ancestor</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="n">breadcrumb</span> <span class="vi">@category</span><span class="p">.</span><span class="nf">name</span><span class="p">,</span> <span class="n">admin_category_path</span><span class="p">(</span><span class="vi">@category</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+<pre><code class="language-erb"><span class="cp">&lt;%</span> <span class="n">breadcrumb_trail</span> <span class="k">do</span> <span class="o">|</span><span class="n">crumb</span><span class="o">|</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;li&gt;</span><span class="cp">&lt;%=</span> <span class="n">link_to</span> <span class="n">crumb</span><span class="p">.</span><span class="nf">name</span><span class="p">,</span> <span class="n">crumb</span><span class="p">.</span><span class="nf">url</span> <span class="cp">%&gt;</span><span class="nt">&lt;/li&gt;</span>
+<span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span></code></pre>
         </div>
         <div>
           <p class="code-label">GretelX</p>
-<pre><code>module Admin
-  class Breadcrumbs &lt; GretelX::Trail
-    def root
-      crumb "Home", admin_root_path
-    end
+<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="k">def</span> <span class="nf">root</span>
+      <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
+    <span class="k">end</span>
 
-    def categories
-      crumb "Categories", admin_categories_path
-    end
+    <span class="k">def</span> <span class="nf">categories</span>
+      <span class="n">crumb</span> <span class="s2">"Categories"</span><span class="p">,</span> <span class="n">admin_categories_path</span>
+    <span class="k">end</span>
 
-    def category(category, ancestors = category.ancestors.to_a)
-      *grandparents, parent_category = ancestors
-      crumb category.name, admin_category_path(category),
-        parent: parent_category ? category(parent_category, grandparents) : categories
-    end
-  end
-end</code></pre>
-<pre><code>&lt;% breadcrumb_trail.each do |level| %&gt;
-  &lt;li&gt;&lt;%= link_to_unless level.current?, level.label, level.url %&gt;&lt;/li&gt;
-&lt;% end %&gt;</code></pre>
+    <span class="k">def</span> <span class="nf">category</span><span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="nb">ancestors</span> <span class="o">=</span> <span class="n">category</span><span class="p">.</span><span class="nf">ancestors</span><span class="p">.</span><span class="nf">to_a</span><span class="p">)</span>
+      <span class="o">*</span><span class="n">grandparents</span><span class="p">,</span> <span class="n">parent_category</span> <span class="o">=</span> <span class="nb">ancestors</span>
+      <span class="n">crumb</span> <span class="n">category</span><span class="p">.</span><span class="nf">name</span><span class="p">,</span> <span class="n">admin_category_path</span><span class="p">(</span><span class="n">category</span><span class="p">),</span>
+        <span class="ss">parent: </span><span class="n">parent_category</span> <span class="p">?</span> <span class="n">category</span><span class="p">(</span><span class="n">parent_category</span><span class="p">,</span> <span class="n">grandparents</span><span class="p">)</span> <span class="p">:</span> <span class="n">categories</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+<pre><code class="language-erb"><span class="cp">&lt;%</span> <span class="n">breadcrumb_trail</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">level</span><span class="o">|</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;li&gt;</span><span class="cp">&lt;%=</span> <span class="n">link_to_unless</span> <span class="n">level</span><span class="p">.</span><span class="nf">current?</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">label</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">url</span> <span class="cp">%&gt;</span><span class="nt">&lt;/li&gt;</span>
+<span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span></code></pre>
           <p class="code-label">show finds the <code>category</code> crumb on its own: the view names nothing</p>
         </div>
       </div>
