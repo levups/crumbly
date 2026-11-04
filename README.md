@@ -255,6 +255,9 @@ It eager-loads the app and reads the source of every crumb (and of the private h
 
 - every parent a crumb calls is a crumb, and every `_path` or `_url` it calls is a route helper;
 - every `breadcrumb :name` in `app/views` and `app/controllers` names a crumb some trail defines;
+- every crumb is called with as many arguments as it takes, by its views and by other crumbs: gretel ignored
+  extra arguments and passed `nil` for missing ones, a method raises `ArgumentError` (a view call spread over
+  several lines, or with a splat, is not counted);
 - every crumb is reachable: called by another crumb, by a view or controller (`breadcrumb :name`,
   `breadcrumb @record`), by a derived trail (the collection and record of a routed controller), or named after
   a model. The others are dead, and fail the test.

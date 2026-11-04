@@ -31,6 +31,24 @@ module Checked
     end
   end
 
+  class WrongArity < GretelX::Trail
+    def orders
+      crumb "Orders", admin_orders_path
+    end
+
+    def order(order)
+      crumb order.to_s, admin_order_path(order), parent: orders(order)
+    end
+
+    def customer(customer)
+      crumb customer.to_s, [:admin, customer]
+    end
+
+    def latest_orders
+      crumb "Latest orders", admin_orders_path, parent: customer
+    end
+  end
+
   class CalledFromHelper < GretelX::Trail
     def orders
       crumb "Orders", admin_orders_path
@@ -79,6 +97,34 @@ class VerifyTest < ActiveSupport::TestCase
     with_views("admin/invoices/index.html.erb" => "<h1>Invoices</h1>\n<% breadcrumb :invoices %>") do |views|
       error = assert_raises(GretelX::InvalidTrail) { verify(Checked::DeadCrumb, sources: [views]) }
       assert_match "admin/invoices/index.html.erb:2 calls breadcrumb :invoices, which no trail defines", error.message
+    end
+  end
+
+  test "a crumb called with more or fewer arguments than it takes" do
+    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::WrongArity) }
+    assert_match(/Checked::WrongArity#order calls orders with 1 argument, which takes 0 \(.*verify_test.rb:40\)/,
+      error.message)
+    assert_match(/Checked::WrongArity#latest_orders calls customer with 0 arguments, which takes 1 \(.*verify_test.rb:48\)/,
+      error.message)
+  end
+
+  test "a view calling a crumb with more or fewer arguments than it takes" do
+    views = {
+      "admin/orders/index.html.erb" => "<% breadcrumb :orders, @customer %>",
+      "admin/orders/show.html.erb" => "<% breadcrumb :order %>",
+      "admin/orders/edit.html.erb" => "<% breadcrumb :orders, autoroot: false %>",
+      "admin/returns/index.html.erb" => "<% breadcrumb :returns, @order, @customer if @order -%>",
+      "admin/returns/new.html.erb" => "<% breadcrumb :returns, *owners %>\n<% breadcrumb :returns,\n  @order, @customer %>"
+    }
+    with_views(views) do |views_directory|
+      error = assert_raises(GretelX::InvalidTrail) { verify(Admin::Breadcrumbs, sources: [views_directory]) }
+      assert_equal <<~TEXT.chomp, error.message.gsub("#{views_directory}/", "")
+        4 breadcrumb problem(s):
+        - admin/orders/edit.html.erb:1 calls breadcrumb :orders with 1 argument, which takes 0
+        - admin/orders/index.html.erb:1 calls breadcrumb :orders with 1 argument, which takes 0
+        - admin/orders/show.html.erb:1 calls breadcrumb :order with 0 arguments, which takes 1
+        - admin/returns/index.html.erb:1 calls breadcrumb :returns with 2 arguments, which takes 0 to 1
+      TEXT
     end
   end
 
