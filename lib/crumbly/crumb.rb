@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   Link = Data.define(:label, :url)
 
   Crumb = Data.define(:label, :url, :links, :parent)

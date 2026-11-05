@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "gretelx"
+require "crumbly"
 
-module GretelX
+module Crumbly
   # Lists the `breadcrumb` calls of views whose trail the action now derives, for a person to review: a call
   # is only redundant when the derived trail matches the one its crumb drew.
   module DerivedCallSites

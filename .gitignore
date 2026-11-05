@@ -1,5 +1,5 @@
 /Gemfile.lock
 /gemfiles/*.lock
 /pkg/
-gretelx-*.gem
+crumbly-*.gem
 /tmp/

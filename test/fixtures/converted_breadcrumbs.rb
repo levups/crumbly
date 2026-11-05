@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Converted
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def root
       crumb "Home", admin_root_path
     end

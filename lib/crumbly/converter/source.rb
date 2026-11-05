@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   class Converter
     # A parsed breadcrumbs file, or one expansion of a loop in it, and the edits that turn its nodes into text.
     class Source

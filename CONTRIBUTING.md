@@ -1,11 +1,11 @@
 # Contributing
 
-Thank you for helping. GretelX is maintained by Level UP Solutions, two developers who use it in production
+Thank you for helping. Crumbly is maintained by Level UP Solutions, two developers who use it in production
 every day: small, focused pull requests get reviewed fastest.
 
 ## Before you start
 
-- **Bugs**: open an issue with the smallest input that reproduces it. GretelX replaces gretel: when the output
+- **Bugs**: open an issue with the smallest input that reproduces it. Crumbly replaces gretel: when the output
   differs from gretel's, say so and show both.
 - **Features**: open an issue first, so we can agree on the scope before you write the code. Being a drop-in
   replacement comes first: a feature that changes what existing code renders or returns stays off by default.

@@ -2,7 +2,7 @@
 
 # bundle exec ruby [--yjit] bench/render.rb
 # The same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) rendered by gretel and by
-# GretelX, as an <ol> of links and as a JSON-LD BreadcrumbList.
+# Crumbly, as an <ol> of links and as a JSON-LD BreadcrumbList.
 
 require "bundler/setup"
 require "benchmark/ips"
@@ -10,7 +10,7 @@ require "rails"
 require "action_controller"
 require "active_model"
 require "gretel"
-require "gretelx"
+require "crumbly"
 
 ROUTES = ActionDispatch::Routing::RouteSet.new
 ROUTES.draw do
@@ -23,7 +23,7 @@ ROUTES.default_url_options = {host: "example.com", protocol: "https"}
 
 Gretel.breadcrumb_paths = [File.expand_path("gretel/breadcrumbs.rb", __dir__)]
 Gretel.reload_environments = []
-GretelX.routes = ROUTES
+Crumbly.routes = ROUTES
 
 class Record
   include ActiveModel::Model
@@ -56,7 +56,7 @@ ALICE = Customer.new(id: 7, name: "Alice")
 ORDER = Order.new(id: 42, number: "2026-0042", customer: ALICE)
 
 module Admin
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def root
       crumb "Home", root_path
     end
@@ -80,7 +80,7 @@ module Admin
 end
 
 module Storefront
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def root
       crumb "Home", root_url
     end
@@ -103,8 +103,8 @@ module Storefront
   end
 end
 
-module GretelXRendering
-  def gretelx_breadcrumbs
+module CrumblyRendering
+  def crumbly_breadcrumbs
     tag.ol(class: "breadcrumbs") do
       safe_join(breadcrumb_trail.map do |level|
         level.current? ? tag.li(level.label, class: "current") : tag.li(link_to(level.label, level.url))
@@ -122,7 +122,7 @@ end
 
 class BenchController < ActionController::Base
   include ROUTES.url_helpers
-  include GretelX::Controller
+  include Crumbly::Controller
 end
 
 class GretelController < BenchController
@@ -130,14 +130,14 @@ class GretelController < BenchController
 end
 
 module Admin
-  class GretelXController < BenchController
-    helper GretelX::ViewHelpers, GretelXRendering
+  class CrumblyController < BenchController
+    helper Crumbly::ViewHelpers, CrumblyRendering
   end
 end
 
 module Storefront
-  class GretelXController < BenchController
-    helper GretelX::ViewHelpers
+  class CrumblyController < BenchController
+    helper Crumbly::ViewHelpers
   end
 end
 
@@ -148,8 +148,8 @@ def view_for(controller_class)
 end
 
 gretel_view = view_for(GretelController)
-admin_view = view_for(Admin::GretelXController)
-storefront_view = view_for(Storefront::GretelXController)
+admin_view = view_for(Admin::CrumblyController)
+storefront_view = view_for(Storefront::CrumblyController)
 
 def render_with(view)
   lambda do
@@ -161,16 +161,16 @@ end
 CASES_BY_OUTPUT = {
   "<ol>" => {
     "gretel" => render_with(gretel_view) { |view| view.breadcrumbs(style: :ol) },
-    "gretelx" => render_with(admin_view, &:gretelx_breadcrumbs)
+    "crumbly" => render_with(admin_view, &:crumbly_breadcrumbs)
   },
   "JSON-LD" => {
     "gretel" => render_with(gretel_view, &:gretel_json_ld),
-    "gretelx" => render_with(storefront_view, &:breadcrumb_json_ld)
+    "crumbly" => render_with(storefront_view, &:breadcrumb_json_ld)
   }
 }
 
 puts "Ruby #{RUBY_VERSION}, YJIT #{(defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?) ? "on" : "off"}, " \
-     "Rails #{Rails.version}, gretel #{Gretel::VERSION}, gretelx #{GretelX::VERSION}"
+     "Rails #{Rails.version}, gretel #{Gretel::VERSION}, crumbly #{Crumbly::VERSION}"
 
 ALLOCATION_RUNS = 1_000
 CASES_BY_OUTPUT.each do |output, cases|

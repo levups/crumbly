@@ -7,18 +7,18 @@ require "active_support/core_ext/module/introspection"
 require "active_support/core_ext/string/inflections"
 require "i18n"
 
-require_relative "gretelx/version"
-require_relative "gretelx/errors"
-require_relative "gretelx/crumb"
-require_relative "gretelx/level"
-require_relative "gretelx/trail"
-require_relative "gretelx/json_ld"
-require_relative "gretelx/controller"
-require_relative "gretelx/view_helpers"
-require_relative "gretelx/verifier"
-require_relative "gretelx/railtie" if defined?(Rails::Railtie)
+require_relative "crumbly/version"
+require_relative "crumbly/errors"
+require_relative "crumbly/crumb"
+require_relative "crumbly/level"
+require_relative "crumbly/trail"
+require_relative "crumbly/json_ld"
+require_relative "crumbly/controller"
+require_relative "crumbly/view_helpers"
+require_relative "crumbly/verifier"
+require_relative "crumbly/railtie" if defined?(Rails::Railtie)
 
-module GretelX
+module Crumbly
   class << self
     attr_writer :routes, :raise_on_unknown_crumb, :raise_on_relative_url
 
@@ -39,7 +39,7 @@ module GretelX
     end
 
     # Raises InvalidTrail with every problem found, and returns the dead crumbs ("Admin::Breadcrumbs#drafts").
-    def verify!(trail_classes: nil, routes: GretelX.routes, sources: default_sources)
+    def verify!(trail_classes: nil, routes: Crumbly.routes, sources: default_sources)
       Rails.application.eager_load! if trail_classes.nil? && defined?(Rails.application) && Rails.application
       Verifier.new(trail_classes: trail_classes || Trail.descendants, routes:, sources:).call
     end
@@ -60,7 +60,7 @@ module GretelX
       namespace = controller_class.module_parent
       trail_class_name = (namespace == Object) ? "Breadcrumbs" : "#{namespace}::Breadcrumbs"
       raise MissingTrail, "#{controller_class} has no breadcrumbs: define #{trail_class_name} " \
-                          "(a GretelX::Trail) or call breadcrumbs_with in the controller"
+                          "(a Crumbly::Trail) or call breadcrumbs_with in the controller"
     end
 
     private
