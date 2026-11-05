@@ -1,71 +1,72 @@
 # Crumbly
 
-Breadcrumbs for Rails (gem `crumbly`, module `Crumbly`): one `Crumbly::Trail` class per namespace, trails derived
-from the routes, checked in tests (`Crumbly.verify!`), plus `crumbly-convert` and `Crumbly::Oracle` to migrate from
-gretel. By Level UP Solutions, in the levups organization. The README is the user documentation, `docs/` the
-GitHub Pages site: keep both in step with the code. `CHANGELOG.md` is written when releasing (Changelog and
-releases).
+Breadcrumbs for Rails: one `Crumbly::Trail` class per namespace, trails derived from the routes, checked in tests
+with `Crumbly.verify!`, and `crumbly-convert` plus `Crumbly::Oracle` to migrate from gretel.
 
-## Compatibility
-
-Every Ruby and Rails still maintained (endoflife.date), nothing older: today Ruby 3.3, 3.4, 4.0 and Rails 8.0, 8.1.
-The oldest sets `required_ruby_version`, `TargetRubyVersion` and the Action Pack / Active Support floor in the
-gemspec; Ruby 3.3 means no bare `it` (use `_1`). A version leaves in the release after its end of life.
+Read `README.md` for usage, `STYLE.md` for code style and `CONTRIBUTING.md` for contributions; this file only
+adds what they leave out.
 
 ## Commands
 
 ```sh
-bundle exec rake test                                            # latest Rails (Gemfile)
-BUNDLE_GEMFILE=gemfiles/rails_8_0.gemfile bundle exec rake test  # Rails 8.0
-bundle exec rubocop                                              # Standard's rules + every rubocop-performance cop
-bundle exec ruby [--yjit] bench/render.rb                        # render against gretel
+bundle exec rake test                                            # the newest Rails (Gemfile)
+BUNDLE_GEMFILE=gemfiles/rails_8_0.gemfile bundle exec rake test  # the oldest maintained Rails
+bundle exec rubocop
+bundle exec ruby [--yjit] bench/render.rb                        # render time against gretel
 ```
 
-CI (`.github/workflows/ci.yml`) runs RuboCop, then every maintained Ruby and ruby-head times each Gemfile. A new
-Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's `rails` matrix.
+CI also runs `ruby-head`, and every Ruby with each Gemfile. A new Rails gets a `gemfiles/rails_X_Y.gemfile` and
+joins the `rails` matrix in CI.
 
 ## Traps
 
-- gretel and Prism are not runtime dependencies: `Crumbly::Oracle` needs gretel, the converter and the verifier need
-  Prism 1.2+ (bundled from Ruby 3.4, `gem "prism"` on 3.3). Keep them out of the gemspec.
+- gretel and Prism are not runtime dependencies: keep them out of the gemspec. `Crumbly::Oracle` needs gretel; the
+  converter and the verifier need Prism 1.2+ (bundled from Ruby 3.4, `gem "prism"` on 3.3).
 - A derived trail reads the record the controller already loaded (`@order`), never a query.
 - An unknown crumb or a relative JSON-LD URL raises outside production and goes to `ActiveSupport.error_reporter`
-  in production: keep both paths tested.
-- A hot-path change is measured with `bench/render.rb`, without JIT and with YJIT, and the README's Performance table
-  and `docs/benchmarks.html` come from the same run. A pure performance change never pins internals in tests.
-- Test and bench data stay generic (`Alice`, `Order 2026-0042`, `example.com`).
-- `.claude/hooks/rubocop.sh` autocorrects each Ruby file after an edit.
+  in production: test both paths.
+- The README is the user guide and `docs/` the GitHub Pages site: change them with the code. The README's
+  Performance table and `docs/benchmarks.html` come from the same `bench/render.rb` run.
 
-## Code style
+## Rules for all our gems
 
-Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't settle.
+This section and the next two read the same in super-slim, gamba, crumbly and agentry: change all four together.
 
-## Changelog and releases
-
-- Never edit `CHANGELOG.md` in a PR: any two PRs adding a line there conflict. The changelog is written when
-  releasing, from the PRs merged since the last tag; a PR title says what changes for users.
-- A draft runs no CI, so it never turns green. Confident in the change: open the pull request ready for review,
-  auto-merge on. Not yet: a draft, then `gh pr ready` when it needs the CI.
-- To release, read every PR merged since the last tag (`git log --first-parent --oneline <tag>..origin/main`,
-  squash merges end in `(#n)`, then `gh pr view n`), and write the release under `## [Unreleased]` without
-  committing it: a one-sentence lede, then **Breaking**, **New**, **Faster** (measured, with and without YJIT)
-  and **Fixed**, only those with entries. One entry per change users can see, written for them: several PRs may
-  make one, CI, refactoring, docs and tests make none. Show it to the user, then `bin/release` commits it with
-  the version. No version heading, date or link by hand: `bin/release` writes them.
-- `main` takes no direct push, ours included: every change, a release too, goes through a pull request that merges
-  itself once the required CI checks are green (`gh pr merge --auto --squash`).
-- `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` through such a pull request, then
-  tags its merge commit (README, Releasing), and `.github/workflows/release.yml` publishes it. Both are the same in
-  every Level UP Solutions gem: change them in all four at once.
-- RubyGems trusts the Release workflow (trusted publishing): never `gem push` from a machine.
+- Every maintained Ruby and Rails (https://endoflife.date), nothing older. The oldest sets `required_ruby_version`,
+  `TargetRubyVersion` and the Rails floor, and leaves in the release after its end of life.
+- CI runs RuboCop and the tests on each maintained Ruby. No macOS job: we test on our Macs.
+- `.claude/hooks/rubocop.sh` autocorrects each Ruby file you edit.
+- Measure performance without JIT and with YJIT. A Performance cop the numbers contradict is disabled on its line,
+  with the reason. A pure performance change pins no internals in tests.
+- Test and bench data are anonymized: `alice`, `Post`, `example.com`.
+- Everything in the repository is in English (code, comments, commits, pull requests, issues, reviews, replies),
+  whatever the language of the conversation.
+- No AI attribution in anything people read.
 
 ## Pull requests and issues
 
-- Title: the change as a user sees it (an issue: the finding), in plain words, under 70 characters.
-- Body, no headings: two short paragraphs, the problem then the change (an issue: what to do); 3 to 5 bullets,
-  each a **bold 2–4 word lead-in** and two lines at most (decisions, divergences, what is left out); the proof
-  (reproduction, tests, fuzz seeds, benchmarks) folded in one `<details>`. Nothing the diff or the CI says.
-- Never hard-wrap a pull request, an issue or a comment: GitHub renders each line break, so text wrapped at
-  80 columns reads broken. One line per paragraph and per bullet, however long.
-- Everything here is in English: code, comments, commits, pull requests, issues, reviews and replies, whatever
-  the language of the conversation that produced them.
+- `main` takes no direct push. Every change, releases included, goes through a pull request that merges itself
+  once CI is green: `gh pr merge --auto --squash`.
+- Drafts run no CI. Confident in the change? Open it ready for review, auto-merge on. Not yet? Open a draft, then
+  `gh pr ready` when it needs CI.
+- Never edit `CHANGELOG.md` in a pull request: they would all conflict. It is written at release time.
+- Title: the change as a user sees it (for an issue, the finding), in plain words, under 70 characters.
+- Body, no headings: two short paragraphs, the problem then the change (for an issue, what to do); 3 to 5 bullets,
+  each opening with a **bold 2–4 word lead-in**; the proof (reproduction, tests, benchmarks) folded in one
+  `<details>`. Nothing the diff or CI already says.
+- Never hard-wrap a pull request, an issue or a comment: GitHub renders every line break. One line per paragraph
+  and per bullet.
+
+## Releases
+
+1. List the pull requests merged since the last tag: `git log --first-parent --oneline <tag>..origin/main`, then
+   `gh pr view <n>` for each.
+2. Write the release under `## [Unreleased]` in `CHANGELOG.md`, uncommitted: a one-sentence lede, then
+   **Breaking**, **New**, **Faster** (measured) and **Fixed**, only those with entries. One entry per change users
+   can see, written for them; CI, refactoring, docs and tests get none. No version, date or link: `bin/release`
+   adds them.
+3. Show it to the user. Then `bin/release patch|minor|major` (try `--dry-run` first) commits it through a pull
+   request, waits for the merge and tags it; the tag runs `.github/workflows/release.yml`, which publishes the gem.
+
+RubyGems trusts only that workflow: never `gem push` from a machine, except the very first version of a new gem
+name. `bin/release` and `release.yml` are the same in all four gems.
