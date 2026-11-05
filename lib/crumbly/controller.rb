@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   module Controller
     extend ActiveSupport::Concern
 

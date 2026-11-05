@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 require "prism"
-require "gretelx"
+require "crumbly"
 require_relative "converter/source"
 require_relative "converter/crumb_definition"
 
 if Gem::Version.new(Prism::VERSION) < Gem::Version.new("1.2")
-  raise LoadError, "gretelx-convert needs prism 1.2 or later (#{Prism::VERSION} is loaded): add gem \"prism\" " \
+  raise LoadError, "crumbly-convert needs prism 1.2 or later (#{Prism::VERSION} is loaded): add gem \"prism\" " \
                    "to your Gemfile"
 end
 
-module GretelX
-  # Turns gretel's breadcrumbs files into one GretelX::Trail subclass, and lists what it leaves out.
+module Crumbly
+  # Turns gretel's breadcrumbs files into one Crumbly::Trail subclass, and lists what it leaves out.
   class Converter
     Result = Data.define(:ruby, :notes)
 
@@ -270,7 +270,7 @@ module GretelX
 
       ruby = +"# frozen_string_literal: true\n\n"
       modules.each_with_index { |name, index| ruby << "#{"  " * index}module #{name}\n" }
-      ruby << "#{"  " * depth}class Breadcrumbs < GretelX::Trail\n"
+      ruby << "#{"  " * depth}class Breadcrumbs < Crumbly::Trail\n"
       if helper_methods.any?
         body << "#{"  " * (depth + 1)}private"
         body.concat(helper_methods.map { |lines| indent(lines, depth + 1).join("\n") })

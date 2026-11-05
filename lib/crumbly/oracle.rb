@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "gretel"
-require "gretelx"
+require "crumbly"
 
-module GretelX
-  # Compares gretel's trail with GretelX's for the same crumbs, from a test of an app that still bundles gretel.
+module Crumbly
+  # Compares gretel's trail with Crumbly's for the same crumbs, from a test of an app that still bundles gretel.
   module Oracle
-    Difference = Data.define(:target, :arguments, :gretel, :gretelx, :page) do
-      def initialize(target:, arguments:, gretel:, gretelx:, page: nil)
+    Difference = Data.define(:target, :arguments, :gretel, :crumbly, :page) do
+      def initialize(target:, arguments:, gretel:, crumbly:, page: nil)
         super
       end
 
@@ -15,7 +15,7 @@ module GretelX
         call = target ? "breadcrumb #{Oracle.format_call(target, arguments)}" : "no breadcrumb call"
         "#{"#{page}, " if page}#{call}\n" \
           "  gretel:     #{format_trail(gretel)}\n" \
-          "  gretelx: #{format_trail(gretelx)}"
+          "  crumbly: #{format_trail(crumbly)}"
       end
 
       private
@@ -36,10 +36,10 @@ module GretelX
     # Prepended to the view helpers by `watch`: each page the tests render compares its trail with gretel's.
     module Watch
       def breadcrumb_trail
-        return super if @gretelx_trail || !Oracle.watching?
+        return super if @crumbly_trail || !Oracle.watching?
 
         levels = super
-        Oracle.observe(self, @gretelx_breadcrumb, levels)
+        Oracle.observe(self, @crumbly_breadcrumb, levels)
         levels
       end
     end
@@ -57,8 +57,8 @@ module GretelX
         ::Gretel::Crumbs.reload_if_needed
         cases.filter_map do |target, *arguments|
           gretel = gretel_trail(view, target, arguments)
-          gretelx = gretelx_trail(view, trail_class, target, arguments)
-          Difference.new(target:, arguments:, gretel:, gretelx:) unless gretel == gretelx
+          crumbly = crumbly_trail(view, trail_class, target, arguments)
+          Difference.new(target:, arguments:, gretel:, crumbly:) unless gretel == crumbly
         end
       end
 
@@ -87,15 +87,15 @@ module GretelX
         target, arguments = breadcrumb_call
         page = "#{view.controller.controller_path}##{view.controller.action_name}"
         gretel = target ? gretel_trail_or_error(view, target, arguments) : []
-        difference = Difference.new(target:, arguments:, gretel:, gretelx: flatten(levels), page:)
+        difference = Difference.new(target:, arguments:, gretel:, crumbly: flatten(levels), page:)
         redundant = target && derived_trail(view) == gretel
         @mutex.synchronize do
-          differences << difference unless difference.gretel == difference.gretelx
+          differences << difference unless difference.gretel == difference.crumbly
           redundant_calls << RedundantCall.new(page:, target:, arguments:) if redundant
         end
       end
 
-      # gretel renders each link of a crumb as a level of its own; GretelX keeps the extra ones in `links`.
+      # gretel renders each link of a crumb as a level of its own; Crumbly keeps the extra ones in `links`.
       def gretel_trail(view, target, arguments)
         links = []
         crumb = ::Gretel::Crumb.new(view, target, *arguments)
@@ -109,7 +109,7 @@ module GretelX
         links.map { |link| [link.text.to_s, link.url] }
       end
 
-      def gretelx_trail(view, trail_class, target, arguments)
+      def crumbly_trail(view, trail_class, target, arguments)
         flatten(trail_class.resolve(view, target, *arguments))
       end
 
@@ -134,7 +134,7 @@ module GretelX
 
       # A derived trail that raises (an action loading no record, say) only means the call has to stay.
       def derived_trail(view)
-        flatten(GretelX.trail_class_for(view.controller.class).derive(view))
+        flatten(Crumbly.trail_class_for(view.controller.class).derive(view))
       rescue
         nil
       end

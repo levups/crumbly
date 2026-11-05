@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "gretelx/test_helper"
+require "crumbly/test_helper"
 require "tmpdir"
 
 module Checked
-  class UnknownParent < GretelX::Trail
+  class UnknownParent < Crumbly::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -15,13 +15,13 @@ module Checked
     end
   end
 
-  class UnknownRouteHelper < GretelX::Trail
+  class UnknownRouteHelper < Crumbly::Trail
     def orders
       crumb "Orders", admin_order_list_path
     end
   end
 
-  class DeadCrumb < GretelX::Trail
+  class DeadCrumb < Crumbly::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -31,7 +31,7 @@ module Checked
     end
   end
 
-  class WrongArity < GretelX::Trail
+  class WrongArity < Crumbly::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -49,7 +49,7 @@ module Checked
     end
   end
 
-  class CalledFromHelper < GretelX::Trail
+  class CalledFromHelper < Crumbly::Trail
     def orders
       crumb "Orders", admin_orders_path
     end
@@ -76,32 +76,32 @@ class VerifyTest < ActiveSupport::TestCase
 
   test "every crumb, parent, route helper and view call checks out" do
     with_views(VIEWS) do |views|
-      assert_equal [], GretelX.verify!(trail_classes: [Admin::Breadcrumbs, Storefront::Breadcrumbs], sources: [views])
+      assert_equal [], Crumbly.verify!(trail_classes: [Admin::Breadcrumbs, Storefront::Breadcrumbs], sources: [views])
       assert_breadcrumbs_valid(trail_classes: [Admin::Breadcrumbs, Storefront::Breadcrumbs], sources: [views])
     end
   end
 
   test "an unknown parent" do
-    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::UnknownParent) }
+    error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::UnknownParent) }
     assert_match(/Checked::UnknownParent#order calls order_list, which is not a crumb \(.*verify_test.rb:14\)/,
       error.message)
   end
 
   test "an unknown route helper" do
-    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::UnknownRouteHelper) }
+    error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::UnknownRouteHelper) }
     assert_match "Checked::UnknownRouteHelper#orders calls admin_order_list_path, which is not a route helper",
       error.message
   end
 
   test "a crumb called from a view but never defined" do
     with_views("admin/invoices/index.html.erb" => "<h1>Invoices</h1>\n<% breadcrumb :invoices %>") do |views|
-      error = assert_raises(GretelX::InvalidTrail) { verify(Checked::DeadCrumb, sources: [views]) }
+      error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::DeadCrumb, sources: [views]) }
       assert_match "admin/invoices/index.html.erb:2 calls breadcrumb :invoices, which no trail defines", error.message
     end
   end
 
   test "a crumb called with more or fewer arguments than it takes" do
-    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::WrongArity) }
+    error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::WrongArity) }
     assert_match(/Checked::WrongArity#order calls orders with 1 argument, which takes 0 \(.*verify_test.rb:40\)/,
       error.message)
     assert_match(/Checked::WrongArity#latest_orders calls customer with 0 arguments, which takes 1 \(.*verify_test.rb:48\)/,
@@ -117,7 +117,7 @@ class VerifyTest < ActiveSupport::TestCase
       "admin/returns/new.html.erb" => "<% breadcrumb :returns, *owners %>\n<% breadcrumb :returns,\n  @order, @customer %>"
     }
     with_views(views) do |views_directory|
-      error = assert_raises(GretelX::InvalidTrail) { verify(Admin::Breadcrumbs, sources: [views_directory]) }
+      error = assert_raises(Crumbly::InvalidTrail) { verify(Admin::Breadcrumbs, sources: [views_directory]) }
       assert_equal <<~TEXT.chomp, error.message.gsub("#{views_directory}/", "")
         4 breadcrumb problem(s):
         - admin/orders/edit.html.erb:1 calls breadcrumb :orders with 1 argument, which takes 0
@@ -129,7 +129,7 @@ class VerifyTest < ActiveSupport::TestCase
   end
 
   test "every problem in one message" do
-    error = assert_raises(GretelX::InvalidTrail) { verify(Checked::UnknownParent, Checked::UnknownRouteHelper) }
+    error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::UnknownParent, Checked::UnknownRouteHelper) }
     assert_match(/\A2 breadcrumb problem\(s\):\n- .*order_list.*\n- .*admin_order_list_path/, error.message)
   end
 
@@ -150,7 +150,7 @@ class VerifyTest < ActiveSupport::TestCase
   private
 
   def verify(*trail_classes, sources: [])
-    GretelX.verify!(trail_classes:, sources:)
+    Crumbly.verify!(trail_classes:, sources:)
   end
 
   def with_views(views)

@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   module ViewHelpers
     # The view names its crumb; a view that says nothing gets the trail derived from its controller and action.
     def breadcrumb(target, *arguments)
-      @gretelx_breadcrumb = [target, arguments]
-      @gretelx_trail = nil
+      @crumbly_breadcrumb = [target, arguments]
+      @crumbly_trail = nil
     end
 
     def breadcrumb_trail
-      @gretelx_trail ||= begin
-        trail_class = GretelX.trail_class_for(controller.class)
-        if @gretelx_breadcrumb
-          target, arguments = @gretelx_breadcrumb
+      @crumbly_trail ||= begin
+        trail_class = Crumbly.trail_class_for(controller.class)
+        if @crumbly_breadcrumb
+          target, arguments = @crumbly_breadcrumb
           trail_class.resolve(self, target, *arguments)
         else
           trail_class.derive(self)

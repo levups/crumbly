@@ -2,7 +2,7 @@
 
 require "prism"
 
-module GretelX
+module Crumbly
   class Verifier
     BREADCRUMB_CALL = /\bbreadcrumb[\s(]+(?::(\w+)|["'](\w+)["']|@(\w+))/
     ROUTE_HELPER = /_(?:path|url)\z/

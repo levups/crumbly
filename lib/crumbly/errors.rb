@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   class Error < StandardError; end
 
   class DuplicateCrumb < Error; end

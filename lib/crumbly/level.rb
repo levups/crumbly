@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   Level = Data.define(:label, :url, :links, :current) do
     def current?
       current

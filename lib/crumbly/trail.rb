@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module GretelX
-  # One subclass per namespace (Admin::Breadcrumbs < GretelX::Trail): each public method defined there is a crumb.
+module Crumbly
+  # One subclass per namespace (Admin::Breadcrumbs < Crumbly::Trail): each public method defined there is a crumb.
   class Trail
     RouteParent = Data.define(:name, :id, :record)
 
@@ -17,7 +17,7 @@ module GretelX
 
       def inherited(subclass)
         super
-        routes = GretelX.routes
+        routes = Crumbly.routes
         if routes
           subclass.include(routes.url_helpers)
           subclass.include(UrlOptionsFromView)
@@ -132,7 +132,7 @@ module GretelX
 
     def unknown_crumb(message)
       exception = UnknownCrumb.new(message)
-      raise exception if GretelX.raise_on_unknown_crumb?
+      raise exception if Crumbly.raise_on_unknown_crumb?
 
       ActiveSupport.error_reporter.report(exception, handled: true)
       nil
@@ -168,11 +168,11 @@ module GretelX
     end
 
     def new_record_crumb
-      crumb(I18n.t("gretelx.new", default: "New"), parent: collection_crumb)
+      crumb(I18n.t("crumbly.new", default: "New"), parent: collection_crumb)
     end
 
     def edit_record_crumb(record)
-      crumb(I18n.t("gretelx.edit", default: "Edit"), parent: record_crumb(record))
+      crumb(I18n.t("crumbly.edit", default: "Edit"), parent: record_crumb(record))
     end
 
     # Under a nested route (/orders/42/messages), a crumb named after the whole nesting (order_messages) is

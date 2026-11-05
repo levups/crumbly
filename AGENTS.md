@@ -1,8 +1,8 @@
-# GretelX
+# Crumbly
 
-Breadcrumbs for Rails (gem `gretelx`, module `GretelX`): one `GretelX::Trail` class per namespace, trails derived
-from the routes, checked in tests (`GretelX.verify!`), plus `gretelx-convert` and `GretelX::Oracle` to migrate from
-gretel. By Level UP Solutions, in the next-gen-gems organization. The README is the user documentation, `docs/` the
+Breadcrumbs for Rails (gem `crumbly`, module `Crumbly`): one `Crumbly::Trail` class per namespace, trails derived
+from the routes, checked in tests (`Crumbly.verify!`), plus `crumbly-convert` and `Crumbly::Oracle` to migrate from
+gretel. By Level UP Solutions, in the levups organization. The README is the user documentation, `docs/` the
 GitHub Pages site: keep both in step with the code. `CHANGELOG.md` is written when releasing (Changelog and
 releases).
 
@@ -26,7 +26,7 @@ Rails gets `gemfiles/rails_X_Y.gemfile` and joins the CI's `rails` matrix.
 
 ## Traps
 
-- gretel and Prism are not runtime dependencies: `GretelX::Oracle` needs gretel, the converter and the verifier need
+- gretel and Prism are not runtime dependencies: `Crumbly::Oracle` needs gretel, the converter and the verifier need
   Prism 1.2+ (bundled from Ruby 3.4, `gem "prism"` on 3.3). Keep them out of the gemspec.
 - A derived trail reads the record the controller already loaded (`@order`), never a query.
 - An unknown crumb or a relative JSON-LD URL raises outside production and goes to `ActiveSupport.error_reporter`
@@ -56,7 +56,7 @@ Follow `STYLE.md` (naming, method size, comments, dead code): what RuboCop can't
   itself once the required CI checks are green (`gh pr merge --auto --squash`).
 - `bin/release patch|minor|major` cuts a release from a green, up-to-date `main` through such a pull request, then
   tags its merge commit (README, Releasing), and `.github/workflows/release.yml` publishes it. Both are the same in
-  every next-gen-gems gem: change them in all four at once.
+  every Level UP Solutions gem: change them in all four at once.
 - RubyGems trusts the Release workflow (trusted publishing): never `gem push` from a machine.
 
 ## Pull requests and issues

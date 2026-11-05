@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module GretelX
+module Crumbly
   class Converter
     # One gretel `crumb :key do |arguments| ... end`, written as the `def key(arguments)` of a Trail.
     class CrumbDefinition
@@ -365,7 +365,7 @@ module GretelX
         arguments = link.arguments&.arguments.to_a.dup
         if arguments.size > 1 && arguments.last.is_a?(Prism::KeywordHashNode)
           options = arguments.pop
-          notes << "crumb :#{key}: link options #{options.slice} have no equivalent in GretelX: left out"
+          notes << "crumb :#{key}: link options #{options.slice} have no equivalent in Crumbly: left out"
         end
         if arguments.empty? || arguments.size > 2 || link.block ||
             arguments.any? { |argument| argument in Prism::SplatNode | Prism::KeywordHashNode }

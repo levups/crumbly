@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Migrating to GretelX</title>
-<meta name="description" content="Move to GretelX from gretel (with a codemod and a comparison test), breadcrumbs_on_rails or loaf: what maps to what, and what you can delete.">
-<link rel="canonical" href="https://next-gen-gems.github.io/gretelx/migration.html">
-<meta property="og:title" content="Migrating to GretelX">
-<meta property="og:description" content="Move to GretelX from gretel (with a codemod and a comparison test), breadcrumbs_on_rails or loaf: what maps to what, and what you can delete.">
+<title>Migrating to Crumbly</title>
+<meta name="description" content="Move to Crumbly from gretel (with a codemod and a comparison test), breadcrumbs_on_rails or loaf: what maps to what, and what you can delete.">
+<link rel="canonical" href="https://levups.github.io/crumbly/migration.html">
+<meta property="og:title" content="Migrating to Crumbly">
+<meta property="og:description" content="Move to Crumbly from gretel (with a codemod and a comparison test), breadcrumbs_on_rails or loaf: what maps to what, and what you can delete.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://next-gen-gems.github.io/gretelx/migration.html">
-<meta property="og:site_name" content="Next Gen Gems">
+<meta property="og:url" content="https://levups.github.io/crumbly/migration.html">
+<meta property="og:site_name" content="Level UP Solutions">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#9a5b00">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -23,11 +23,11 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <div class="page">
   <nav class="site-nav" aria-label="Site">
-    <a class="brand" href="./">GretelX</a>
+    <a class="brand" href="./">Crumbly</a>
     <a href="guide.html">Guide</a>
     <a href="migration.html" aria-current="page">Migration</a>
     <a href="benchmarks.html">Benchmarks</a>
-    <a href="https://github.com/next-gen-gems/gretelx">GitHub</a>
+    <a href="https://github.com/levups/crumbly">GitHub</a>
   </nav>
 
   <main id="content">
@@ -47,11 +47,11 @@
         <p>The shape stays the same, a crumb that names its parent, and view call sites barely change: <code>breadcrumb :order, @order</code> and <code>breadcrumb @order</code> work as they did. What moves is <code>config/breadcrumbs.rb</code>, split into one class per namespace, and a codemod writes that class.</p>
         <p>An app switches in one go: there is no compatibility layer, and the two gems do not run side by side in production. gretel stays in the Gemfile of the migration branch only, for the comparison test below.</p>
         <h3>1. Convert the breadcrumbs file</h3>
-<pre><code class="language-sh">bundle <span class="nb">exec </span>gretelx-convert config/breadcrumbs.rb <span class="nt">--namespace</span> Admin <span class="se">\</span>
+<pre><code class="language-sh">bundle <span class="nb">exec </span>crumbly-convert config/breadcrumbs.rb <span class="nt">--namespace</span> Admin <span class="se">\</span>
   <span class="nt">--output</span> app/breadcrumbs/admin/breadcrumbs.rb <span class="nt">--views</span> app/views/admin</code></pre>
         <p>It writes <code>Admin::Breadcrumbs</code> and prints, with their line, what it left out or converted with a loss. Several files (<code>config/breadcrumbs/*.rb</code>) make one class, the later definition of a crumb winning as in gretel.</p>
         <table class="options">
-          <thead><tr><th scope="col">gretel</th><th scope="col">GretelX</th></tr></thead>
+          <thead><tr><th scope="col">gretel</th><th scope="col">Crumbly</th></tr></thead>
           <tbody>
             <tr><td><code>crumb :key do |order| ... end</code></td><td><code>def key(order) ... end</code>, a parameter tested for nil getting <code>= nil</code></td></tr>
             <tr><td><code>link label, url</code></td><td><code>crumb label, url</code>; <code>link label</code> or <code>link label, nil</code> give a level without a URL</td></tr>
@@ -70,22 +70,22 @@
         <p>It lists, without converting them: a loop over anything but a literal array or hash (of symbols, strings, numbers and constants), <code>link</code> or <code>parent</code> inside anything but a conditional (a loop, a block), <code>link</code> options (<code>title:</code>, <code>class:</code>), crumbs whose name is a Ruby keyword or an existing method (<code>display</code>, <code>test</code>), and any statement that is not a crumb, a loop or a local. Comments are kept above the method they precede.</p>
         <p>The codemod is built on Prism 1.2 or later: Ruby 3.4 ships it, and on Ruby 3.3 add <code>gem "prism"</code> to the development group.</p>
         <h3>2. Compare the trails</h3>
-        <p>While gretel is still bundled, the tests draw each trail with both gems and list the differences in labels and URLs. gretel shows a crumb’s extra links as levels of their own: the comparison does the same with <code>links</code>. Keep gretel in the test group with <code>require: false</code>: <code>gretelx/oracle</code> loads it, without the view helpers whose <code>breadcrumb</code> would replace GretelX’s.</p>
+        <p>While gretel is still bundled, the tests draw each trail with both gems and list the differences in labels and URLs. gretel shows a crumb’s extra links as levels of their own: the comparison does the same with <code>links</code>. Keep gretel in the test group with <code>require: false</code>: <code>crumbly/oracle</code> loads it, without the view helpers whose <code>breadcrumb</code> would replace Crumbly’s.</p>
 <pre><code class="language-ruby"><span class="c1"># Gemfile, on the migration branch</span>
 <span class="n">gem</span> <span class="s2">"gretel"</span><span class="p">,</span> <span class="ss">require: </span><span class="kp">false</span><span class="p">,</span> <span class="ss">group: :test</span></code></pre>
-        <p>The views already call <code>breadcrumb</code> the way GretelX expects, so the app’s own controller, integration and system tests can do the comparing. With <code>GretelX::Oracle.watch</code> in the test helper, every page they render is drawn by gretel too, from the same <code>breadcrumb</code> call:</p>
+        <p>The views already call <code>breadcrumb</code> the way Crumbly expects, so the app’s own controller, integration and system tests can do the comparing. With <code>Crumbly::Oracle.watch</code> in the test helper, every page they render is drawn by gretel too, from the same <code>breadcrumb</code> call:</p>
 <pre><code class="language-ruby"><span class="c1"># test/test_helper.rb, once the app is loaded</span>
-<span class="nb">require</span> <span class="s2">"gretelx/oracle"</span>
+<span class="nb">require</span> <span class="s2">"crumbly/oracle"</span>
 
-<span class="no">GretelX</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">watch</span>
+<span class="no">Crumbly</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">watch</span>
 <span class="no">Minitest</span><span class="p">.</span><span class="nf">after_run</span> <span class="k">do</span>
-  <span class="nb">puts</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">differences</span><span class="p">.</span><span class="nf">to_a</span><span class="p">,</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">redundant_calls</span><span class="p">.</span><span class="nf">to_a</span>
+  <span class="nb">puts</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">differences</span><span class="p">.</span><span class="nf">to_a</span><span class="p">,</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">redundant_calls</span><span class="p">.</span><span class="nf">to_a</span>
 <span class="k">end</span></code></pre>
-        <p><code>differences</code> holds each page whose trail changed, gretel’s and GretelX’s side by side, including the pages without a <code>breadcrumb</code> call, which gretel left without a trail and which now derive one. <code>redundant_calls</code> holds the calls whose trail the action derives anyway. <code>watch { ... }</code> watches a block only. Parallel test workers each fill their own lists, which <code>after_run</code> in the parent process never sees: run the watched suite with <code>PARALLEL_WORKERS=1</code>. A call gretel cannot draw shows as a difference, with gretel’s error.</p>
+        <p><code>differences</code> holds each page whose trail changed, gretel’s and Crumbly’s side by side, including the pages without a <code>breadcrumb</code> call, which gretel left without a trail and which now derive one. <code>redundant_calls</code> holds the calls whose trail the action derives anyway. <code>watch { ... }</code> watches a block only. Parallel test workers each fill their own lists, which <code>after_run</code> in the parent process never sees: run the watched suite with <code>PARALLEL_WORKERS=1</code>. A call gretel cannot draw shows as a difference, with gretel’s error.</p>
         <p>For the crumbs no test renders, <code>compare</code> takes the calls to check:</p>
 <pre><code class="language-ruby"><span class="k">class</span> <span class="nc">BreadcrumbsMigrationTest</span> <span class="o">&lt;</span> <span class="no">ActionView</span><span class="o">::</span><span class="no">TestCase</span>
-  <span class="nb">test</span> <span class="s2">"GretelX draws the trails gretel drew"</span> <span class="k">do</span>
-    <span class="n">differences</span> <span class="o">=</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">compare</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="no">Admin</span><span class="o">::</span><span class="no">Breadcrumbs</span><span class="p">,</span> <span class="p">[</span>
+  <span class="nb">test</span> <span class="s2">"Crumbly draws the trails gretel drew"</span> <span class="k">do</span>
+    <span class="n">differences</span> <span class="o">=</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Oracle</span><span class="p">.</span><span class="nf">compare</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="no">Admin</span><span class="o">::</span><span class="no">Breadcrumbs</span><span class="p">,</span> <span class="p">[</span>
       <span class="p">[</span><span class="ss">:orders</span><span class="p">],</span> <span class="p">[</span><span class="ss">:order</span><span class="p">,</span> <span class="n">orders</span><span class="p">(</span><span class="ss">:alice</span><span class="p">)],</span> <span class="p">[</span><span class="n">orders</span><span class="p">(</span><span class="ss">:alice</span><span class="p">)],</span> <span class="p">[</span><span class="ss">:returns</span><span class="p">],</span> <span class="p">[</span><span class="ss">:returns</span><span class="p">,</span> <span class="n">customers</span><span class="p">(</span><span class="ss">:alice</span><span class="p">)]</span>
     <span class="p">])</span>
 
@@ -93,7 +93,7 @@
   <span class="k">end</span>
 <span class="k">end</span></code></pre>
         <h3>3. Review the call sites</h3>
-        <p><code>--views</code> lists the <code>breadcrumb</code> calls that a derived trail may now cover: <code>:generic_form</code> (or <code>:new</code>, <code>:edit</code>) in new and edit views, <code>breadcrumb @order</code> in a show view, <code>breadcrumb :orders</code> in an index view. Nothing is deleted: a call goes once its view shows the same trail without it, which is what <code>GretelX::Oracle.redundant_calls</code> lists for the pages the tests render. Area prefixes in the keys (<code>:admin_order</code>) can go too, since the namespace does that job.</p>
+        <p><code>--views</code> lists the <code>breadcrumb</code> calls that a derived trail may now cover: <code>:generic_form</code> (or <code>:new</code>, <code>:edit</code>) in new and edit views, <code>breadcrumb @order</code> in a show view, <code>breadcrumb :orders</code> in an index view. Nothing is deleted: a call goes once its view shows the same trail without it, which is what <code>Crumbly::Oracle.redundant_calls</code> lists for the pages the tests render. Area prefixes in the keys (<code>:admin_order</code>) can go too, since the namespace does that job.</p>
         <h3>4. Remove gretel</h3>
         <p>Drop gretel and <code>config/breadcrumbs.rb</code>, and render <code>breadcrumb_trail</code> in the layout where <code>breadcrumbs</code> was; the <a href="guide.html#rendering">guide</a> has a loop. gretel’s rendering options (<code>style: :bootstrap5</code>, separator, <code>link_current</code>, semantic markup) become choices in that markup, and its <code>structured_data</code> becomes <a href="guide.html#storefronts"><code>breadcrumb_json_ld</code></a>.</p>
         <p>Then add the <a href="guide.html#tests">breadcrumbs test</a>: it catches the parents, route helpers and view calls the conversion got wrong, and the crumbs nothing reaches any more.</p>
@@ -104,7 +104,7 @@
       <h2 id="bor-title">From breadcrumbs_on_rails</h2>
       <div class="prose">
         <p><a href="https://github.com/weppos/breadcrumbs_on_rails">breadcrumbs_on_rails</a> builds the trail in controllers: <code>add_breadcrumb</code> at class level (a path as a symbol is called on the controller, with <code>only:</code> and <code>except:</code> to pick actions), then inside actions, each call appended to the last. <code>render_breadcrumbs</code> draws it, with a <code>separator:</code> or a custom <code>builder:</code>.</p>
-        <p>GretelX builds the trail from the other end: the view names its last crumb, and each crumb names its parent. Most <code>add_breadcrumb</code> calls disappear, because <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code> derive the same trail from the routes and the record the controller loaded.</p>
+        <p>Crumbly builds the trail from the other end: the view names its last crumb, and each crumb names its parent. Most <code>add_breadcrumb</code> calls disappear, because <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code> derive the same trail from the routes and the record the controller loaded.</p>
       </div>
       <div class="split">
         <div>
@@ -127,9 +127,9 @@
 <pre><code class="language-erb"><span class="cp">&lt;%=</span> <span class="n">render_breadcrumbs</span> <span class="ss">separator: </span><span class="s2">" / "</span> <span class="cp">%&gt;</span></code></pre>
         </div>
         <div>
-          <p class="code-label">GretelX</p>
+          <p class="code-label">Crumbly</p>
 <pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
-  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
     <span class="k">def</span> <span class="nf">root</span>
       <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
     <span class="k">end</span>
@@ -155,7 +155,7 @@
       <div class="prose">
         <h3>Steps</h3>
         <ol>
-          <li>Replace <code>gem "breadcrumbs_on_rails"</code> with <code>gem "gretelx"</code>.</li>
+          <li>Replace <code>gem "breadcrumbs_on_rails"</code> with <code>gem "crumbly"</code>.</li>
           <li>The class-level "Home" becomes <code>root</code> in each namespace’s trail class. A class-level section crumb ("Orders") becomes a crumb named after the controller, <code>orders</code>, only if the derived label (the model’s human plural name) is not the one you want.</li>
           <li>Delete the <code>add_breadcrumb</code> calls of <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code>. For other actions, write a crumb and name it from the view with <code>breadcrumb</code>.</li>
           <li>Replace <code>render_breadcrumbs</code> with a loop over <code>breadcrumb_trail</code>. A custom builder becomes that loop, or your component.</li>
@@ -167,7 +167,7 @@
       <h2 id="loaf-title">From loaf</h2>
       <div class="prose">
         <p><a href="https://github.com/piotrmurach/loaf">loaf</a> appends crumbs with <code>breadcrumb</code>: at controller class level (with <code>only:</code> and <code>except:</code>), inside actions, or in views. Its <code>breadcrumb_trail</code> yields each crumb, with <code>name</code>, <code>url</code> and <code>current?</code>, to a block, and decides <code>current?</code> by comparing the crumb’s URL with the request (the <code>match:</code> option).</p>
-        <p>GretelX uses the same two helper names, so loaf must go first. Its <code>breadcrumb</code> names one crumb instead of appending one, its <code>breadcrumb_trail</code> returns an array instead of taking a block, and the current level is simply the last.</p>
+        <p>Crumbly uses the same two helper names, so loaf must go first. Its <code>breadcrumb</code> names one crumb instead of appending one, its <code>breadcrumb_trail</code> returns an array instead of taking a block, and the current level is simply the last.</p>
       </div>
       <div class="split">
         <div>
@@ -189,9 +189,9 @@
 <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span></code></pre>
         </div>
         <div>
-          <p class="code-label">GretelX</p>
+          <p class="code-label">Crumbly</p>
 <pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
-  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">GretelX</span><span class="o">::</span><span class="no">Trail</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
     <span class="k">def</span> <span class="nf">root</span>
       <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
     <span class="k">end</span>
@@ -216,7 +216,7 @@
       <div class="prose">
         <h3>Steps</h3>
         <ol>
-          <li>Replace <code>gem "loaf"</code> with <code>gem "gretelx"</code>.</li>
+          <li>Replace <code>gem "loaf"</code> with <code>gem "crumbly"</code>.</li>
           <li>Move the controllers’ class-level crumbs into each namespace’s trail class: "Home" becomes <code>root</code>, a section becomes a crumb named after the controller.</li>
           <li>Delete the crumbs appended in <code>index</code>, <code>show</code>, <code>new</code> and <code>edit</code>, and turn the others into crumbs that name their parent.</li>
           <li>In views, a run of <code>breadcrumb "Name", path</code> calls becomes one crumb method, named with <code>breadcrumb :name</code>.</li>
@@ -227,16 +227,16 @@
   </main>
 
   <footer class="family">
-    <p><a href="https://github.com/next-gen-gems">Next Gen Gems</a>, by Level UP Solutions</p>
-    <nav aria-label="Next Gen Gems">
+    <p>Open-source gems by <a href="https://github.com/levups">Level UP Solutions</a></p>
+    <nav aria-label="Level UP Solutions gems">
       <ul>
-        <li><a href="https://next-gen-gems.github.io/slimx/">SlimX</a></li>
-        <li><a href="https://next-gen-gems.github.io/browserx/">BrowserX</a></li>
-        <li><a href="https://next-gen-gems.github.io/prawnx/">PrawnX</a></li>
-        <li><a href="https://next-gen-gems.github.io/gretelx/" aria-current="page">GretelX</a></li>
+        <li><a href="https://levups.github.io/super-slim/">SuperSlim</a></li>
+        <li><a href="https://levups.github.io/agentry/">Agentry</a></li>
+        <li><a href="https://levups.github.io/gamba/">Gamba</a></li>
+        <li><a href="https://levups.github.io/crumbly/" aria-current="page">Crumbly</a></li>
       </ul>
     </nav>
-    <p><a href="https://github.com/next-gen-gems/gretelx">Source on GitHub</a></p>
+    <p><a href="https://github.com/levups/crumbly">Source on GitHub</a></p>
   </footer>
 </div>
 </body>

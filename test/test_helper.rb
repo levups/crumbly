@@ -4,7 +4,7 @@ require "minitest/autorun"
 require "action_controller"
 require "action_dispatch/testing/integration"
 require "active_model"
-require "gretelx"
+require "crumbly"
 
 ROUTES = ActionDispatch::Routing::RouteSet.new
 ROUTES.draw do
@@ -36,9 +36,9 @@ ROUTES.draw do
   end
 end
 
-GretelX.routes = ROUTES
-ActionController::Base.include(GretelX::Controller)
-ActionView::Base.include(GretelX::ViewHelpers)
+Crumbly.routes = ROUTES
+ActionController::Base.include(Crumbly::Controller)
+ActionView::Base.include(Crumbly::ViewHelpers)
 
 class ApplicationController < ActionController::Base
   include ROUTES.url_helpers
@@ -109,7 +109,7 @@ POST = Post.new(id: 5, title: "Hello")
 COMMENT = Comment.new(id: 9, body: "First!")
 
 module Admin
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def root
       crumb "Home", admin_root_path
     end
@@ -257,7 +257,7 @@ module Admin
 end
 
 module Storefront
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def categories
       crumb "Shop", storefront_root_url
     end

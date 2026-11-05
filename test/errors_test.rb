@@ -16,8 +16,8 @@ class ErrorsTest < ActiveSupport::TestCase
   end
 
   test "a crumb defined twice in a namespace raises when the class loads" do
-    error = assert_raises(GretelX::DuplicateCrumb) do
-      Class.new(GretelX::Trail) do
+    error = assert_raises(Crumbly::DuplicateCrumb) do
+      Class.new(Crumbly::Trail) do
         def orders = crumb("Orders")
         def orders = crumb("All orders") # rubocop:disable Lint/DuplicateMethods -- the mistake under test
       end
@@ -26,14 +26,14 @@ class ErrorsTest < ActiveSupport::TestCase
   end
 
   test "a namespace may override a crumb it inherits" do
-    base = Class.new(GretelX::Trail) { def orders = crumb("Orders") }
+    base = Class.new(Crumbly::Trail) { def orders = crumb("Orders") }
     trail_class = Class.new(base) { def orders = crumb("All orders") }
 
     assert_equal ["All orders"], trail_class.resolve(nil, :orders).map(&:label)
   end
 
   test "private methods are helpers, not crumbs" do
-    trail_class = Class.new(GretelX::Trail) do
+    trail_class = Class.new(Crumbly::Trail) do
       def orders = crumb(label)
 
       private
@@ -43,38 +43,38 @@ class ErrorsTest < ActiveSupport::TestCase
 
     assert trail_class.crumb?(:orders)
     refute trail_class.crumb?(:label)
-    assert_raises(GretelX::UnknownCrumb) { trail_class.resolve(nil, :label) }
+    assert_raises(Crumbly::UnknownCrumb) { trail_class.resolve(nil, :label) }
   end
 
   test "an unknown crumb raises outside production" do
-    error = assert_raises(GretelX::UnknownCrumb) { Admin::Breadcrumbs.resolve(nil, :invoices) }
+    error = assert_raises(Crumbly::UnknownCrumb) { Admin::Breadcrumbs.resolve(nil, :invoices) }
     assert_equal "Admin::Breadcrumbs has no crumb named invoices", error.message
 
-    error = assert_raises(GretelX::UnknownCrumb) { Admin::Breadcrumbs.resolve(nil, POST) }
+    error = assert_raises(Crumbly::UnknownCrumb) { Admin::Breadcrumbs.resolve(nil, POST) }
     assert_equal "Admin::Breadcrumbs has no crumb for Post: define #post", error.message
   end
 
   test "an unknown crumb is reported in production and leaves the page without a trail" do
     reports = Reports.new
     ActiveSupport.error_reporter.subscribe(reports)
-    GretelX.raise_on_unknown_crumb = false
+    Crumbly.raise_on_unknown_crumb = false
 
     assert_equal [], Admin::Breadcrumbs.resolve(nil, :invoices)
     assert_equal ["Admin::Breadcrumbs has no crumb named invoices"], reports.errors.map(&:message)
   ensure
-    GretelX.raise_on_unknown_crumb = nil
+    Crumbly.raise_on_unknown_crumb = nil
     ActiveSupport.error_reporter.unsubscribe(reports)
   end
 
   test "a controller outside any namespace with breadcrumbs says where to define them" do
     controller_class = Class.new(ActionController::Base) { def self.name = "OrdersController" }
-    error = assert_raises(GretelX::MissingTrail) { GretelX.trail_class_for(controller_class) }
-    assert_match "define Breadcrumbs (a GretelX::Trail)", error.message
+    error = assert_raises(Crumbly::MissingTrail) { Crumbly.trail_class_for(controller_class) }
+    assert_match "define Breadcrumbs (a Crumbly::Trail)", error.message
   end
 
   test "breadcrumbs_with picks the namespace class explicitly" do
     controller_class = Class.new(ActionController::Base) { breadcrumbs_with Storefront::Breadcrumbs }
 
-    assert_equal Storefront::Breadcrumbs, GretelX.trail_class_for(controller_class)
+    assert_equal Storefront::Breadcrumbs, Crumbly.trail_class_for(controller_class)
   end
 end

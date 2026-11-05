@@ -21,6 +21,6 @@ body:
     id: versions
     attributes:
       label: Versions
-      placeholder: GretelX 1.0.0 (or commit), Rails 8.1, Ruby 4.0.1
+      placeholder: Crumbly 1.0.0 (or commit), Rails 8.1, Ruby 4.0.1
     validations:
       required: true

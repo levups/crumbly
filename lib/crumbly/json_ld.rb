@@ -5,7 +5,7 @@ require "active_support/core_ext/string/output_safety"
 require "json"
 require "loofah"
 
-module GretelX
+module Crumbly
   # A schema.org BreadcrumbList, as Google's Rich Results test reads it.
   module JsonLd
     ABSOLUTE_URL_PREFIXES = ["https://", "http://"].freeze
@@ -41,7 +41,7 @@ module GretelX
       def relative_url(level)
         exception = RelativeUrl.new("JSON-LD needs absolute URLs: #{plain_text(level.label).inspect} links to " \
                                     "#{level.url}, use a _url helper in its crumb")
-        raise exception if GretelX.raise_on_relative_url?
+        raise exception if Crumbly.raise_on_relative_url?
 
         ActiveSupport.error_reporter.report(exception, handled: true)
         nil

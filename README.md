@@ -1,8 +1,8 @@
-# GretelX
+# Crumbly
 
 Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests.
 
-<https://next-gen-gems.github.io/gretelx/>: guide, migration from gretel, breadcrumbs_on_rails and loaf, benchmarks.
+<https://levups.github.io/crumbly/>: guide, migration from gretel, breadcrumbs_on_rails and loaf, benchmarks.
 
 [gretel](https://github.com/kzkn/gretel) works, but on a real back office (one file of about 1,000 lines,
 265 crumbs, 380 call sites), its shape is what hurts:
@@ -13,7 +13,7 @@ Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests.
 - blocks run through `instance_exec` and helpers reached through `method_missing`;
 - every trail written by hand, even when the routes already describe it.
 
-GretelX keeps gretel's good idea (a crumb names its parent) and changes the rest:
+Crumbly keeps gretel's good idea (a crumb names its parent) and changes the rest:
 
 - **One class per namespace.** `Admin::Breadcrumbs` and `Storefront::Breadcrumbs` each hold their own crumbs,
   under the same names if they like. Zeitwerk loads them, so they load before a prefork server forks.
@@ -29,7 +29,7 @@ GretelX keeps gretel's good idea (a crumb names its parent) and changes the rest
 ## Installation
 
 ```ruby
-gem "gretelx"
+gem "crumbly"
 ```
 
 The railtie adds `breadcrumb`, `breadcrumb_trail` and `breadcrumb_json_ld` to your views, and `breadcrumbs_with` to your controllers.
@@ -39,7 +39,7 @@ The railtie adds `breadcrumb`, `breadcrumb_trail` and `breadcrumb_json_ld` to yo
 ```ruby
 # app/breadcrumbs/admin/breadcrumbs.rb
 module Admin
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def root
       crumb "Home", admin_root_path
     end
@@ -78,7 +78,7 @@ end
   `link(label, url)`s for a level that points to more than one page.
 - `crumb_for(record)` is the crumb of a record found by its model, which is how you write a polymorphic parent.
 - Private methods are helpers, not crumbs. View helpers are reached through `helpers` (`helpers.t(".orders")`).
-- Every name that works in a view is a crumb, so `GretelX::Trail` keeps its own methods private. The ones
+- Every name that works in a view is a crumb, so `Crumbly::Trail` keeps its own methods private. The ones
   your crumbs must not be named after are `crumb`, `link`, `crumb_for` and `helpers`.
 
 ### Namespaces
@@ -100,8 +100,8 @@ When a view does not call `breadcrumb`, the trail follows the action:
 |---|---|
 | `index` | the collection: your `posts` crumb, or else the model's plural name linked to the `index` route |
 | `show` | the record: your `post` crumb, or else `to_s` linked to the `show` route, under the collection |
-| `new`, `create` | "New" (`gretelx.new`) under the collection |
-| `edit`, `update` | "Edit" (`gretelx.edit`) under the record |
+| `new`, `create` | "New" (`crumbly.new`) under the collection |
+| `edit`, `update` | "Edit" (`crumbly.edit`) under the record |
 
 The record is the one the controller already loaded (`@post` in `PostsController`): it is never looked up
 again. To change how a trail is derived, override the private methods `collection_crumb`, `record_crumb`,
@@ -137,7 +137,7 @@ end
 ```
 
 ```ruby
-# GretelX, app/breadcrumbs/admin/breadcrumbs.rb: optional, the nested route derives the same trail
+# Crumbly, app/breadcrumbs/admin/breadcrumbs.rb: optional, the nested route derives the same trail
 def order_messages(order)
   crumb "Messages", admin_order_messages_path(order), parent: order(order)
 end
@@ -158,7 +158,7 @@ end
 ```
 
 ```ruby
-# GretelX
+# Crumbly
 def returns(owner = nil)
   return crumb("Returns", admin_returns_path) unless owner
 
@@ -181,7 +181,7 @@ end
 ```
 
 ```ruby
-# GretelX
+# Crumbly
 def order(order)
   crumb "Order #{order.number}", admin_order_path(order),
     parent: order.customer ? customer_orders(order.customer) : orders
@@ -202,7 +202,7 @@ end
 ```
 
 ```ruby
-# GretelX
+# Crumbly
 def category(category, ancestors = category.ancestors.to_a)
   *grandparents, parent_category = ancestors
   crumb category.name, admin_category_path(category),
@@ -231,7 +231,7 @@ end
 ```
 
 ```ruby
-# GretelX: nothing to write. new and edit derive "New" under the collection, "Edit" under the record.
+# Crumbly: nothing to write. new and edit derive "New" under the collection, "Edit" under the record.
 ```
 
 ## Checked in tests
@@ -242,7 +242,7 @@ or loading a record:
 ```ruby
 # test/breadcrumbs_test.rb
 require "test_helper"
-require "gretelx/test_helper"
+require "crumbly/test_helper"
 
 class BreadcrumbsTest < ActiveSupport::TestCase
   test "breadcrumbs" do
@@ -262,7 +262,7 @@ It eager-loads the app and reads the source of every crumb (and of the private h
   `breadcrumb @record`), by a derived trail (the collection and record of a routed controller), or named after
   a model. The others are dead, and fail the test.
 
-`GretelX.verify!` does the same outside Minitest: it raises `GretelX::InvalidTrail` with every problem
+`Crumbly.verify!` does the same outside Minitest: it raises `Crumbly::InvalidTrail` with every problem
 in one message, and returns the dead crumbs (`["Admin::Breadcrumbs#drafts"]`). Both take `trail_classes:`,
 `routes:` and `sources:` (the directories scanned for `breadcrumb` calls).
 
@@ -272,7 +272,7 @@ The trail is data, so absolute URLs are just `_url` helpers in that namespace's 
 
 ```ruby
 module Storefront
-  class Breadcrumbs < GretelX::Trail
+  class Breadcrumbs < Crumbly::Trail
     def category(category)
       crumb category.name, storefront_category_url(category),
         parent: category.parent ? category(category.parent) : shop
@@ -293,10 +293,10 @@ for its breadcrumb rich result:
   so it is left out.
 - A name is plain text: an `html_safe` label (an icon, a `<b>`) has its markup stripped and its entities decoded.
 - The JSON is escaped for a `<script>` tag, so a label cannot close it.
-- Google only takes absolute URLs: a relative one raises `GretelX::RelativeUrl` in development and test.
+- Google only takes absolute URLs: a relative one raises `Crumbly::RelativeUrl` in development and test.
   In production it is reported and the page renders without a `BreadcrumbList`. Set
-  `GretelX.raise_on_relative_url` to choose.
-- `GretelX::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
+  `Crumbly.raise_on_relative_url` to choose.
+- `Crumbly::JsonLd.call(levels)` returns the `BreadcrumbList` as a hash, for a page that builds its own
   structured data.
 
 ## Migrating from gretel
@@ -307,14 +307,14 @@ production. gretel stays in the Gemfile of the migration branch only, for the co
 ### 1. Convert the breadcrumbs file
 
 ```sh
-bundle exec gretelx-convert config/breadcrumbs.rb --namespace Admin \
+bundle exec crumbly-convert config/breadcrumbs.rb --namespace Admin \
   --output app/breadcrumbs/admin/breadcrumbs.rb --views app/views/admin
 ```
 
 It writes `Admin::Breadcrumbs` and prints, with their line, what it left out or converted with a loss. Several
 files (`config/breadcrumbs/*.rb`) make one class, the later definition of a crumb winning as in gretel.
 
-| gretel | GretelX |
+| gretel | Crumbly |
 |---|---|
 | `crumb :key do \|order\| ... end` | `def key(order) ... end`, a parameter tested for nil getting `= nil` |
 | `link label, url` | `crumb label, url`; `link label` or `link label, nil` give a level without a URL |
@@ -341,29 +341,29 @@ development group.
 
 While gretel is still bundled, the tests draw each trail with both gems and list the differences in labels and
 URLs. gretel shows a crumb's extra links as levels of their own: the comparison does the same with `links`. Keep
-gretel in the test group with `require: false`: `gretelx/oracle` loads it, without the view helpers whose
-`breadcrumb` would replace GretelX's.
+gretel in the test group with `require: false`: `crumbly/oracle` loads it, without the view helpers whose
+`breadcrumb` would replace Crumbly's.
 
 ```ruby
 # Gemfile, on the migration branch
 gem "gretel", require: false, group: :test
 ```
 
-The views already call `breadcrumb` the way GretelX expects, so the app's own controller, integration and system
-tests can do the comparing. With `GretelX::Oracle.watch` in the test helper, every page they render is drawn by
+The views already call `breadcrumb` the way Crumbly expects, so the app's own controller, integration and system
+tests can do the comparing. With `Crumbly::Oracle.watch` in the test helper, every page they render is drawn by
 gretel too, from the same `breadcrumb` call:
 
 ```ruby
 # test/test_helper.rb, once the app is loaded
-require "gretelx/oracle"
+require "crumbly/oracle"
 
-GretelX::Oracle.watch
+Crumbly::Oracle.watch
 Minitest.after_run do
-  puts GretelX::Oracle.differences.to_a, GretelX::Oracle.redundant_calls.to_a
+  puts Crumbly::Oracle.differences.to_a, Crumbly::Oracle.redundant_calls.to_a
 end
 ```
 
-`differences` holds each page whose trail changed, gretel's and GretelX's side by side, including the pages
+`differences` holds each page whose trail changed, gretel's and Crumbly's side by side, including the pages
 without a `breadcrumb` call, which gretel left without a trail and which now derive one. `redundant_calls`
 holds the calls whose trail the action derives anyway. `watch { ... }` watches a block only. Parallel test
 workers each fill their own lists, which `after_run` in the parent process never sees: run the watched suite
@@ -373,8 +373,8 @@ For the crumbs no test renders, `compare` takes the calls to check:
 
 ```ruby
 class BreadcrumbsMigrationTest < ActionView::TestCase
-  test "GretelX draws the trails gretel drew" do
-    differences = GretelX::Oracle.compare(view, Admin::Breadcrumbs, [
+  test "Crumbly draws the trails gretel drew" do
+    differences = Crumbly::Oracle.compare(view, Admin::Breadcrumbs, [
       [:orders], [:order, orders(:alice)], [orders(:alice)], [:returns], [:returns, customers(:alice)]
     ])
 
@@ -388,7 +388,7 @@ end
 `--views` lists the `breadcrumb` calls that a derived trail may now cover: `:generic_form` (or `:new`,
 `:edit`) in new and edit views, `breadcrumb @order` in a show view, `breadcrumb :orders` in an index view.
 Nothing is deleted: a call goes once its view shows the same trail without it, which is what
-`GretelX::Oracle.redundant_calls` lists for the pages the tests render.
+`Crumbly::Oracle.redundant_calls` lists for the pages the tests render.
 
 ### 4. Remove gretel
 
@@ -401,7 +401,7 @@ Ruby 3.3 or later, and Rails 8.0 or later (Action Pack and Active Support).
 ## Performance
 
 `bench/render.rb` renders the same five-level trail (Home > Customers > Alice > Orders > Order 2026-0042) with
-gretel and with GretelX, and checks that both produce the same output. The `<ol>` is gretel's
+gretel and with Crumbly, and checks that both produce the same output. The `<ol>` is gretel's
 `breadcrumbs(style: :ol)` against a ten-line helper over `breadcrumb_trail`. The JSON-LD is gretel's
 `structured_data(url_base:)` (paths behind a prefix) against `breadcrumb_json_ld` (`_url` helpers), both
 encoded and escaped the same way.
@@ -411,9 +411,9 @@ Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three r
 | Render | Allocations | Time, YJIT off | Time, YJIT on |
 |---|---|---|---|
 | gretel `<ol>` | 345 | 57.6 µs | 35.1 µs |
-| GretelX `<ol>` | 274 | 45.4 µs | 29.8 µs |
+| Crumbly `<ol>` | 274 | 45.4 µs | 29.8 µs |
 | gretel JSON-LD | 268 | 41.3 µs | 25.4 µs |
-| GretelX JSON-LD | 287 | 43.3 µs | 29.5 µs |
+| Crumbly JSON-LD | 287 | 43.3 µs | 29.5 µs |
 
 Most of the JSON-LD gap comes from Rails' `_url` helpers, which are slower than `_path` ones: building the
 `BreadcrumbList` from the levels accounts for 1.7 µs of it.
@@ -451,5 +451,5 @@ with the version's notes and the `.gem`.
 
 ## License
 
-MIT, by Level UP Solutions. GretelX keeps the idea of [gretel](https://github.com/kzkn/gretel), by Lasse Bunk and
+MIT, by Level UP Solutions. Crumbly keeps the idea of [gretel](https://github.com/kzkn/gretel), by Lasse Bunk and
 Kazuki Nishikawa: a crumb names its parent.
