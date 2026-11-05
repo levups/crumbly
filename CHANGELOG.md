@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-11-05
+
+GretelX is now Crumbly, in the levups organization: same breadcrumbs, new names.
+
+**Breaking**
+- The gem is `gem "crumbly"`: `require "crumbly"`, `require "crumbly/test_helper"` and `require "crumbly/oracle"` replace their gretelx versions.
+- The module `GretelX` becomes `Crumbly` (`Crumbly::Trail`, `Crumbly.verify!`, `Crumbly::Oracle`, `Crumbly::InvalidTrail`, `Crumbly::RelativeUrl`), and its i18n keys `gretelx.new` / `gretelx.edit` become `crumbly.new` / `crumbly.edit`.
+- The executable `gretelx-convert` becomes `crumbly-convert`.
+
 ## [1.1.0] — 2026-11-04
 
 The app's own test suite becomes the migration oracle, `verify!` catches crumbs called with the wrong number of
@@ -53,6 +62,7 @@ tests. Replaces gretel: `crumbly-convert` turns its breadcrumbs files into Crumb
   `breadcrumb` calls a derived trail may now cover.
 - `Crumbly::Oracle.compare` draws trails with gretel and with Crumbly, from a test of an app migrating.
 
-[Unreleased]: https://github.com/levups/crumbly/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/levups/crumbly/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/levups/crumbly/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/levups/crumbly/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/levups/crumbly/releases/tag/v1.0.0
