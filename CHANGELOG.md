@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-11-06
+
+A trail class can turn off derived trails with `derive_trails false`, and a derived level labels a record without its own `to_s` "Invoice 12" instead of `#<Invoice:0x…>`.
+
+**New**
+- `derive_trails false` in a trail class, for apps that want only the trails they write, as with gretel: a view without a `breadcrumb` call gets an empty `breadcrumb_trail` and a nil `breadcrumb_json_ld`. Subclasses inherit it and `derive_trails true` turns it back on. In such a class, `Crumbly.verify!` reports a crumb that only a derived trail would read as unused, and `Crumbly::Oracle.redundant_calls` lists nothing.
+
+**Fixed**
+- A derived level whose record's model doesn't define `to_s` is labelled with the translated model name and id, "Invoice 12", instead of Ruby's `#<Invoice:0x000…>`. A model's own `to_s` still wins.
+
 ## [2.1.0] — 2026-11-06
 
 Crumbs refuse `javascript:`, `vbscript:` and `data:` URLs, and a nil record, odd bytes or `=begin` comments no longer break Crumbly.
@@ -76,7 +86,8 @@ tests. Replaces gretel: `crumbly-convert` turns its breadcrumbs files into Crumb
   `breadcrumb` calls a derived trail may now cover.
 - `Crumbly::Oracle.compare` draws trails with gretel and with Crumbly, from a test of an app migrating.
 
-[Unreleased]: https://github.com/levups/crumbly/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/levups/crumbly/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/levups/crumbly/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/levups/crumbly/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/levups/crumbly/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/levups/crumbly/compare/v1.0.0...v1.1.0
