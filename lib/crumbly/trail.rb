@@ -62,6 +62,10 @@ module Crumbly
     attr_reader :helpers
 
     def crumb(label, url = nil, parent: nil, links: [])
+      unless parent.nil? || parent.is_a?(Crumb)
+        raise ArgumentError, "parent: takes a crumb, such as parent: orders, not #{parent.inspect}"
+      end
+
       Crumb.new(label:, url: path_for(url), links:, parent:)
     end
 
@@ -74,7 +78,16 @@ module Crumbly
       name = crumb_name_for(record)
       return public_send(name, record, *) if name
 
-      unknown_crumb("#{self.class} has no crumb for #{record.class}: define ##{record.model_name.singular}")
+      unknown_crumb(unknown_record_message(record))
+    end
+
+    # `breadcrumb @order` before the controller loads @order passes nil: it is reported like an unknown crumb.
+    def unknown_record_message(record)
+      if record.class.respond_to?(:model_name)
+        "#{self.class} has no crumb for #{record.class}: define ##{record.model_name.singular}"
+      else
+        "#{self.class} has no crumb for #{record.nil? ? "nil" : "a #{record.class}"}: pass a crumb name or a record"
+      end
     end
 
     def path_for(url)
@@ -121,6 +134,8 @@ module Crumbly
     # STI: a subclass without a crumb of its own falls back on its parent class's.
     def crumb_name_for(record)
       model_class = record.class
+      return unless model_class.respond_to?(:model_name)
+
       loop do
         name = model_class.model_name.singular.to_sym
         return name if self.class.crumb?(name)

@@ -100,6 +100,17 @@ class VerifyTest < ActiveSupport::TestCase
     end
   end
 
+  test "a file that is not UTF-8 is read without failing the verification" do
+    with_views("admin/orders/index.html.erb" => "") do |views|
+      File.binwrite("#{views}/admin/orders/index.html.erb", "<h1>Caf\xE9</h1>\n<% breadcrumb :invoices %>")
+      File.binwrite("#{views}/admin/orders/logo.png", "\x89PNG\r\n\x1A\n\xFF\xFE")
+
+      error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::DeadCrumb, sources: [views]) }
+      assert_equal "1 breadcrumb problem(s):\n- admin/orders/index.html.erb:2 calls breadcrumb :invoices, which no " \
+                   "trail defines", error.message.gsub("#{views}/", "")
+    end
+  end
+
   test "a crumb called with more or fewer arguments than it takes" do
     error = assert_raises(Crumbly::InvalidTrail) { verify(Checked::WrongArity) }
     assert_match(/Checked::WrongArity#order calls orders with 1 argument, which takes 0 \(.*verify_test.rb:40\)/,

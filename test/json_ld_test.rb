@@ -54,6 +54,18 @@ class JsonLdTest < IntegrationTestCase
     assert_equal ["Tom & Jerry", "Alice's <b>orders</b>"], breadcrumb_list["itemListElement"].map { |item| item["name"] }
   end
 
+  test "a URL scheme in capitals is absolute, and bytes that are not UTF-8 do not fail the page" do
+    breadcrumb_list = Crumbly::JsonLd.call([
+      level("Shop", "HTTPS://example.com/"),
+      level((+"Caf\xE9").force_encoding(Encoding::UTF_8), nil, current: true)
+    ])
+
+    assert_equal [
+      {"@type" => "ListItem", "position" => 1, "name" => "Shop", "item" => "HTTPS://example.com/"},
+      {"@type" => "ListItem", "position" => 2, "name" => "Caf\uFFFD"}
+    ], breadcrumb_list["itemListElement"]
+  end
+
   test "an empty trail has no BreadcrumbList" do
     assert_nil Crumbly::JsonLd.call([])
   end

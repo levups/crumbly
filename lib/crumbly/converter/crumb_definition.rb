@@ -450,12 +450,12 @@ module Crumbly
       end
 
       def loose_comments
-        source.comments.filter_map do |comment|
+        source.comments.flat_map do |comment|
           offset = comment.location.start_offset
-          next unless offset.between?(block.location.start_offset, block.location.end_offset)
-          next if copied_ranges.any? { |range| range.cover?(offset) }
+          next [] unless offset.between?(block.location.start_offset, block.location.end_offset)
+          next [] if copied_ranges.any? { |range| range.cover?(offset) }
 
-          comment.slice.rstrip
+          Source.comment_text(comment)
         end
       end
 

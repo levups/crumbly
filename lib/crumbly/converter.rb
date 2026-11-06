@@ -224,7 +224,11 @@ module Crumbly
       end
     end
 
-    def substitutions(node, value_by_name, depth = 0, edits = [])
+    # A string's interpolated value is written as text when only a plain string or symbol reads it: in a regexp,
+    # a command, a %W array or after a delimiter such as %Q/, the same text would mean something else.
+    INLINE_OPENING = /\A(?::?"|<<|%Q?[(\[{<])/
+
+    def substitutions(node, value_by_name, depth = 0, edits = [], inline: false)
       case node
       when Prism::LocalVariableReadNode
         value = value_by_name[node.name] if node.depth == depth
@@ -236,17 +240,21 @@ module Crumbly
           return edits << [node.location.start_offset, node.location.end_offset, text.inspect]
         end
       when Prism::EmbeddedStatementsNode
-        if node in {statements: {body: [Prism::LocalVariableReadNode[depth: ^depth, name:]]}}
+        if inline && (node in {statements: {body: [Prism::LocalVariableReadNode[depth: ^depth, name:]]}})
           text = value_by_name[name]&.text
           if text&.match?(%r{\A[\w ./-]*\z})
             edits << [node.location.start_offset, node.location.end_offset, text]
             return edits
           end
         end
+      when Prism::InterpolatedStringNode, Prism::InterpolatedSymbolNode
+        inline = INLINE_OPENING.match?(node.opening.to_s)
+      when Prism::InterpolatedRegularExpressionNode, Prism::InterpolatedMatchLastLineNode, Prism::InterpolatedXStringNode
+        inline = false
       when Prism::BlockNode, Prism::LambdaNode then depth += 1
       when Prism::DefNode then return edits
       end
-      node&.compact_child_nodes&.each { |child| substitutions(child, value_by_name, depth, edits) }
+      node&.compact_child_nodes&.each { |child| substitutions(child, value_by_name, depth, edits, inline:) }
       edits
     end
 
