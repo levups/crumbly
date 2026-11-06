@@ -12,4 +12,6 @@ module Crumbly
   class InvalidTrail < Error; end
 
   class RelativeUrl < Error; end
+
+  class UnsafeUrl < Error; end
 end

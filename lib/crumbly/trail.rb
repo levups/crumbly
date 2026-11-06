@@ -4,6 +4,9 @@ module Crumbly
   # One subclass per namespace (Admin::Breadcrumbs < Crumbly::Trail): each public method defined there is a crumb.
   class Trail
     RouteParent = Data.define(:name, :id, :record)
+    # Browsers drop leading spaces and control characters, and tabs and newlines anywhere: "java\tscript:" runs.
+    IGNORED_URL_CHARACTERS = /\A[\x00-\x20]+|[\t\n\r]/
+    UNSAFE_URL_SCHEME = /\A(?:javascript|vbscript|data):/i
 
     # Included after the routes' url_helpers, whose own url_options would otherwise win.
     module UrlOptionsFromView
@@ -92,9 +95,23 @@ module Crumbly
 
     def path_for(url)
       case url
-      when nil, String then url
+      when nil then nil
+      when String then safe_url(url)
       else polymorphic_path(url)
       end
+    end
+
+    # A URL built from user input can run a script once a layout links it: the level keeps its label, not the link.
+    def safe_url(url)
+      return url if url.start_with?("/", "https://", "http://") || !url.include?(":")
+      return url unless UNSAFE_URL_SCHEME.match?(url.gsub(IGNORED_URL_CHARACTERS, ""))
+
+      exception = UnsafeUrl.new("#{self.class} links to #{url.inspect}, which a browser runs as a script: " \
+                                "check its scheme before passing it to a crumb")
+      raise exception if Crumbly.raise_on_unsafe_url?
+
+      ActiveSupport.error_reporter.report(exception, handled: true)
+      nil
     end
 
     def levels_for(target, arguments)

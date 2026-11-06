@@ -91,8 +91,9 @@ record (see [Trails Crumbly works out on its own](#trails-crumbly-works-out-on-i
 A crumb calls `crumb label, url = nil, parent: nil, links: []`.
 
 `url` can be a string, a record or a polymorphic array such as `[:admin, owner, :returns]`. Leave it out for a
-level without a link. A string is used as it is, so if it comes from your users, check its scheme first: a
-`javascript:` URL in a link runs a script.
+level without a link. A `javascript:`, `vbscript:` or `data:` URL would run a script once your layout links it,
+so Crumbly refuses it, however it is spelled (`" JavaScript:"`, `"java\tscript:"`): see
+[Mistakes in development and in production](#mistakes-in-development-and-in-production).
 
 `links:` is for a level that points to more than one page. It takes extra `link(label, url)` entries, which your
 layout reads from `level.links`.
@@ -202,10 +203,15 @@ A view that asks for a crumb that doesn't exist raises `Crumbly::UnknownCrumb` i
 `breadcrumb @order` when `@order` is `nil`. In production the error goes to `Rails.error`, and the page renders
 without a trail instead of failing.
 
-To change this, set it in an initializer:
+A crumb whose URL a browser would run as a script raises `Crumbly::UnsafeUrl` in development and test. In
+production the error goes to `Rails.error`, and the level keeps its label without the link.
+
+To change either, set it in an initializer:
 
 ```ruby
-Crumbly.raise_on_unknown_crumb = true
+# config/initializers/crumbly.rb
+Crumbly.raise_on_unknown_crumb = true # on staging too
+Crumbly.raise_on_unsafe_url = true
 ```
 
 ## Breadcrumbs for search engines
