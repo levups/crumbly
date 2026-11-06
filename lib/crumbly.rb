@@ -20,7 +20,7 @@ require_relative "crumbly/railtie" if defined?(Rails::Railtie)
 
 module Crumbly
   class << self
-    attr_writer :routes, :raise_on_unknown_crumb, :raise_on_relative_url
+    attr_writer :routes, :raise_on_unknown_crumb, :raise_on_relative_url, :raise_on_unsafe_url
 
     def routes
       @routes || (Rails.application&.routes if defined?(Rails.application))
@@ -34,6 +34,12 @@ module Crumbly
 
     def raise_on_relative_url?
       return @raise_on_relative_url unless @raise_on_relative_url.nil?
+
+      !production?
+    end
+
+    def raise_on_unsafe_url?
+      return @raise_on_unsafe_url unless @raise_on_unsafe_url.nil?
 
       !production?
     end

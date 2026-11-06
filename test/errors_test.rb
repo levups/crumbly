@@ -96,6 +96,35 @@ class ErrorsTest < ActiveSupport::TestCase
     assert_equal "parent: takes a crumb, such as parent: orders, not :orders", error.message
   end
 
+  test "a URL a browser would run as a script raises outside production" do
+    trail_class = Class.new(Crumbly::Trail) do
+      def profile(url) = crumb("Profile", url)
+      def links(url) = crumb("Links", nil, links: [link("Website", url)])
+    end
+
+    ["javascript:alert(1)", " JavaScript:alert(1)", "java\tscript:alert(1)", "data:text/html,x", "vbscript:x"].each do |url|
+      error = assert_raises(Crumbly::UnsafeUrl) { trail_class.resolve(nil, :profile, url) }
+      assert_match "links to #{url.inspect}, which a browser runs as a script", error.message
+    end
+    assert_raises(Crumbly::UnsafeUrl) { trail_class.resolve(nil, :links, "javascript:alert(1)") }
+    ["/profile", "https://example.com/a:b", "mailto:alice@example.com", "/search?q=javascript:x"].each do |url|
+      assert_equal url, trail_class.resolve(nil, :profile, url).first.url
+    end
+  end
+
+  test "a URL a browser would run as a script is reported in production and the level loses its link" do
+    reports = Reports.new
+    ActiveSupport.error_reporter.subscribe(reports)
+    Crumbly.raise_on_unsafe_url = false
+    trail_class = Class.new(Crumbly::Trail) { def profile(url) = crumb("Profile", url) }
+
+    assert_equal [["Profile", nil]], trail_class.resolve(nil, :profile, "javascript:alert(1)").map { [_1.label, _1.url] }
+    assert_equal [Crumbly::UnsafeUrl], reports.errors.map(&:class)
+  ensure
+    Crumbly.raise_on_unsafe_url = nil
+    ActiveSupport.error_reporter.unsubscribe(reports)
+  end
+
   test "a controller outside any namespace with breadcrumbs says where to define them" do
     controller_class = Class.new(ActionController::Base) { def self.name = "OrdersController" }
     error = assert_raises(Crumbly::MissingTrail) { Crumbly.trail_class_for(controller_class) }

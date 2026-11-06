@@ -6,10 +6,10 @@ Gem::Specification.new do |spec|
   spec.name = "crumbly"
   spec.version = Crumbly::VERSION
   spec.authors = ["Level UP Solutions"]
-  spec.summary = "Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests"
-  spec.description = "One class of plain Ruby methods per namespace, a trail derived from the controller and " \
-                     "the routes when a view says nothing, mistakes raised when the class loads, and the trail " \
-                     "returned as data for your own components."
+  spec.summary = "Breadcrumb trails for Rails, written as plain Ruby methods and checked in tests"
+  spec.description = "Each level of a breadcrumb trail is a Ruby method that names its parent. When a view names " \
+                     "no crumb, Crumbly works the trail out from the controller and the routes, and one test " \
+                     "checks every trail in the app. The trail comes back as data, so your layout writes the HTML."
   spec.homepage = "https://github.com/levups/crumbly"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3"
@@ -25,5 +25,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "actionpack", ">= 8.0"
   spec.add_dependency "activesupport", ">= 8.0"
-  spec.add_dependency "loofah", ">= 2.21"
+  spec.add_dependency "loofah", ">= 2.25.3"
 end
