@@ -93,7 +93,7 @@
         <table class="options">
           <thead><tr><th scope="col">Method</th><th scope="col">What it does</th></tr></thead>
           <tbody>
-            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> can be a string, a record or a polymorphic array such as <code>[:admin, owner, :returns]</code>. Leave it out for a level without a link. A string is used as it is, so if it comes from your users, check its scheme first: a <code>javascript:</code> URL in a link runs a script.</td></tr>
+            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> can be a string, a record or a polymorphic array such as <code>[:admin, owner, :returns]</code>. Leave it out for a level without a link. A <code>javascript:</code>, <code>vbscript:</code> or <code>data:</code> URL would run a script once your layout links it, so Crumbly refuses it, however it is spelled: see <a href="#errors"><code>Crumbly::UnsafeUrl</code></a>.</td></tr>
             <tr><td><code>link label, url</code></td><td>An extra link for <code>links:</code>, when a level points to more than one page.</td></tr>
             <tr><td><code>crumb_for record</code></td><td>The crumb of a record, found from its model. Use it when the parent can be one of several models.</td></tr>
             <tr><td><code>helpers</code></td><td>The view, for view helpers such as <code>helpers.t(".orders")</code> or <code>helpers.current_user</code>.</td></tr>
@@ -254,12 +254,14 @@
             <tr><td><code>Crumbly::MissingTrail</code></td><td>A view reads the trail of a controller that has no trail class, found from its module or set with <code>breadcrumbs_with</code>. The message names the class to define.</td></tr>
             <tr><td><code>Crumbly::InvalidTrail</code></td><td><a href="#tests"><code>Crumbly.verify!</code></a> found a crumb calling an unknown crumb or route helper, or a <code>breadcrumb :name</code> that no trail defines. The message lists every problem at once, and <code>assert_breadcrumbs_valid</code> turns it into a test failure.</td></tr>
             <tr><td><code>Crumbly::RelativeUrl</code></td><td><a href="#storefronts"><code>breadcrumb_json_ld</code></a> found a level whose URL is not absolute. It is raised in development and test. In production it is reported to <code>Rails.error</code>, and the page has no <code>BreadcrumbList</code>.</td></tr>
+            <tr><td><code>Crumbly::UnsafeUrl</code></td><td>A crumb or a <code>link</code> gets a <code>javascript:</code>, <code>vbscript:</code> or <code>data:</code> URL, which a browser would run as a script, in any case and with spaces, tabs or control characters around it. It is raised in development and test. In production it is reported to <code>Rails.error</code>, and the level keeps its label without the link.</td></tr>
           </tbody>
         </table>
-        <p>To choose when an unknown crumb or a relative URL raises, set it in an initializer:</p>
+        <p>To choose when an unknown crumb, a relative URL or an unsafe URL raises, set it in an initializer:</p>
 <pre><code class="language-ruby"><span class="c1"># config/initializers/crumbly.rb</span>
 <span class="no">Crumbly</span><span class="p">.</span><span class="nf">raise_on_unknown_crumb</span> <span class="o">=</span> <span class="kp">true</span> <span class="c1"># on staging too</span>
-<span class="no">Crumbly</span><span class="p">.</span><span class="nf">raise_on_relative_url</span> <span class="o">=</span> <span class="kp">true</span></code></pre>
+<span class="no">Crumbly</span><span class="p">.</span><span class="nf">raise_on_relative_url</span> <span class="o">=</span> <span class="kp">true</span>
+<span class="no">Crumbly</span><span class="p">.</span><span class="nf">raise_on_unsafe_url</span> <span class="o">=</span> <span class="kp">true</span></code></pre>
       </div>
     </section>
   </main>
