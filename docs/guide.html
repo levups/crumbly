@@ -33,16 +33,16 @@
   <main id="content">
     <header>
       <h1 class="page-title">Guide</h1>
-      <p class="lede">A trail class per namespace, a method per crumb, and a view that names its crumb or lets its action derive one.</p>
+      <p class="lede">How to write crumbs and render the trail, what Crumbly does when a view names no crumb, and how to test it all.</p>
       <ul class="toc">
         <li><a href="#installation">Installation</a></li>
-        <li><a href="#usage">Usage</a></li>
-        <li><a href="#rendering">Rendering</a></li>
-        <li><a href="#namespaces">Namespaces</a></li>
-        <li><a href="#derived">Derived trails</a></li>
-        <li><a href="#precedence">Order of precedence</a></li>
-        <li><a href="#tests">Checked in tests</a></li>
-        <li><a href="#storefronts">Storefronts</a></li>
+        <li><a href="#usage">Writing crumbs</a></li>
+        <li><a href="#rendering">Rendering the trail</a></li>
+        <li><a href="#namespaces">One trail class per namespace</a></li>
+        <li><a href="#derived">Trails Crumbly works out on its own</a></li>
+        <li><a href="#precedence">Which crumb wins</a></li>
+        <li><a href="#tests">Testing your trails</a></li>
+        <li><a href="#storefronts">Breadcrumbs for search engines</a></li>
         <li><a href="#errors">Errors</a></li>
       </ul>
     </header>
@@ -52,14 +52,14 @@
       <div class="prose">
 <pre><code class="language-ruby"><span class="c1"># Gemfile</span>
 <span class="n">gem</span> <span class="s2">"crumbly"</span></code></pre>
-        <p>The railtie adds <code>breadcrumb</code>, <code>breadcrumb_trail</code> and <code>breadcrumb_json_ld</code> to your views, and <code>breadcrumbs_with</code> to your controllers. Ruby 3.3 or later, Rails 8.0 or later (Action Pack and Active Support).</p>
+        <p>There is nothing to configure: the gem adds <code>breadcrumb</code>, <code>breadcrumb_trail</code> and <code>breadcrumb_json_ld</code> to your views, and <code>breadcrumbs_with</code> to your controllers. It needs Ruby 3.3 or later and Rails 8.0 or later.</p>
       </div>
     </section>
 
     <section id="usage" aria-labelledby="usage-title">
-      <h2 id="usage-title">Usage</h2>
+      <h2 id="usage-title">Writing crumbs</h2>
       <div class="prose">
-        <p>A namespace’s crumbs live in one subclass of <code>Crumbly::Trail</code>. Each public method is a crumb; its parent is a call to another one.</p>
+        <p>Crumbs live in a class that inherits from <code>Crumbly::Trail</code>. Every public method in it is a crumb. A crumb returns a label and a URL, and its parent if it has one, which is a call to another crumb. Rails loads the class like any other file in <code>app/</code>, so <code>app/breadcrumbs/admin/breadcrumbs.rb</code> defines <code>Admin::Breadcrumbs</code>.</p>
 <pre><code class="language-ruby"><span class="c1"># app/breadcrumbs/admin/breadcrumbs.rb</span>
 <span class="k">module</span> <span class="nn">Admin</span>
   <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
@@ -85,29 +85,29 @@
 <span class="cp">&lt;%</span> <span class="n">breadcrumb</span> <span class="vi">@order</span> <span class="cp">%&gt;</span></code></pre>
         <h3>In a view</h3>
         <ul>
-          <li><code>breadcrumb :name, *arguments</code> calls the crumb named <code>name</code> with those arguments.</li>
-          <li><code>breadcrumb @record</code> calls the crumb named after the record’s model (<code>order</code> for an <code>Order</code>). A single-table inheritance subclass with no crumb of its own falls back on its parent class’s. A <code>nil</code> record (<code>@order</code> not loaded) is an unknown crumb.</li>
-          <li>A view that calls neither gets a <a href="#derived">derived trail</a>.</li>
+          <li><code>breadcrumb :orders</code> calls the crumb named <code>orders</code>. Its arguments come after the name: <code>breadcrumb :order, @order</code>.</li>
+          <li><code>breadcrumb @order</code> calls the crumb named after the record's model, <code>order</code> for an <code>Order</code>. For a single-table inheritance subclass that has no crumb of its own, it uses the crumb of its parent class. A <code>nil</code> record, when the controller hasn't loaded <code>@order</code>, counts as an unknown crumb.</li>
+          <li>A view that calls neither gets a trail Crumbly <a href="#derived">works out on its own</a>.</li>
         </ul>
         <h3>In a trail class</h3>
         <table class="options">
           <thead><tr><th scope="col">Method</th><th scope="col">What it does</th></tr></thead>
           <tbody>
-            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> takes a string, a record or a polymorphic array (<code>[:admin, owner, :returns]</code>), or nothing for a level without a link. A string URL is used as it is: one that comes from your users can be <code>javascript:</code>, so check its scheme first.</td></tr>
-            <tr><td><code>link label, url</code></td><td>An extra link, for <code>links:</code>, when a level points to more than one page.</td></tr>
-            <tr><td><code>crumb_for record</code></td><td>The crumb of a record, found by its model: how you write a polymorphic parent.</td></tr>
-            <tr><td><code>helpers</code></td><td>The view context: <code>helpers.t(".orders")</code>, <code>helpers.current_user</code>.</td></tr>
-            <tr><td><code>root</code></td><td>Not provided: when you define it, it starts every trail.</td></tr>
+            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> can be a string, a record or a polymorphic array such as <code>[:admin, owner, :returns]</code>. Leave it out for a level without a link. A string is used as it is, so if it comes from your users, check its scheme first: a <code>javascript:</code> URL in a link runs a script.</td></tr>
+            <tr><td><code>link label, url</code></td><td>An extra link for <code>links:</code>, when a level points to more than one page.</td></tr>
+            <tr><td><code>crumb_for record</code></td><td>The crumb of a record, found from its model. Use it when the parent can be one of several models.</td></tr>
+            <tr><td><code>helpers</code></td><td>The view, for view helpers such as <code>helpers.t(".orders")</code> or <code>helpers.current_user</code>.</td></tr>
+            <tr><td><code>root</code></td><td>Yours to define. When it exists, every trail starts with it.</td></tr>
           </tbody>
         </table>
-        <p>Private methods are helpers, not crumbs. Every public method is callable from a view, so <code>Crumbly::Trail</code> keeps its own methods private; your crumbs must not be named <code>crumb</code>, <code>link</code>, <code>crumb_for</code> or <code>helpers</code>.</p>
+        <p>Private methods are helpers, not crumbs, so you can put shared code in them. Any public method can be called from a view, so <code>Crumbly::Trail</code> keeps its own methods private. Don't name a crumb <code>crumb</code>, <code>link</code>, <code>crumb_for</code> or <code>helpers</code>.</p>
       </div>
     </section>
 
     <section id="rendering" aria-labelledby="rendering-title">
-      <h2 id="rendering-title">Rendering</h2>
+      <h2 id="rendering-title">Rendering the trail</h2>
       <div class="prose">
-        <p><code>breadcrumb_trail</code> returns an array of levels, root first. Each level has <code>label</code>, <code>url</code> (a path, or <code>nil</code>), <code>links</code> (each with <code>label</code> and <code>url</code>) and <code>current?</code>, true on the last one. The gem ships no HTML: whether the current page is a link, which separator to use, and how a level with extra links looks are your component’s choices.</p>
+        <p><code>breadcrumb_trail</code> returns the levels of the current page, from the root to the page itself. Each level has a <code>label</code>, a <code>url</code> (a path, or <code>nil</code>), its extra <code>links</code> (each with a <code>label</code> and a <code>url</code>), and <code>current?</code>, which is true for the last one. The gem writes no HTML for you. Whether the current page is a link, which separator to use and how to show extra links are up to your layout:</p>
 <pre><code class="language-erb"><span class="c">&lt;%# app/views/layouts/admin.html.erb %&gt;</span>
 <span class="nt">&lt;nav</span> <span class="na">aria-label=</span><span class="s">"Breadcrumb"</span><span class="nt">&gt;</span>
   <span class="nt">&lt;ol&gt;</span>
@@ -121,45 +121,45 @@
     <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span>
   <span class="nt">&lt;/ol&gt;</span>
 <span class="nt">&lt;/nav&gt;</span></code></pre>
-        <p>A view’s <code>breadcrumb</code> call must come before the layout reads <code>breadcrumb_trail</code>, which is the case for anything in the view itself, since Rails renders the view before its layout.</p>
+        <p>Rails renders a view before its layout, so a <code>breadcrumb</code> call anywhere in the view runs before the layout reads <code>breadcrumb_trail</code>.</p>
       </div>
     </section>
 
     <section id="namespaces" aria-labelledby="namespaces-title">
-      <h2 id="namespaces-title">Namespaces</h2>
+      <h2 id="namespaces-title">One trail class per namespace</h2>
       <div class="prose">
-        <p><code>Admin::OrdersController</code> reads <code>Admin::Breadcrumbs</code>, falling back on enclosing modules and then on a top-level <code>Breadcrumbs</code>. Two namespaces may both define <code>order</code>: they never see each other.</p>
-        <p>A controller outside the namespace picks a trail class explicitly. Subclasses inherit the choice:</p>
+        <p><code>Admin::OrdersController</code> uses <code>Admin::Breadcrumbs</code>. If there is none, Crumbly looks in the enclosing modules, then for a top-level <code>Breadcrumbs</code>. An admin area and a storefront can each have an <code>order</code> crumb, and they don't clash.</p>
+        <p>A controller outside the namespace picks its class with <code>breadcrumbs_with</code>, and its subclasses inherit the choice:</p>
 <pre><code class="language-ruby"><span class="k">class</span> <span class="nc">CheckoutController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
   <span class="n">breadcrumbs_with</span> <span class="no">Storefront</span><span class="o">::</span><span class="no">Breadcrumbs</span>
 <span class="k">end</span></code></pre>
-        <p>The classes live in <code>app/breadcrumbs/</code>, an autoloaded directory, so Zeitwerk loads them with the rest of the app and eager loading has them in memory before a prefork server forks.</p>
+        <p>The classes live in <code>app/breadcrumbs/</code>, which Rails autoloads. With eager loading they are in memory before a prefork server forks.</p>
       </div>
     </section>
 
     <section id="derived" aria-labelledby="derived-title">
-      <h2 id="derived-title">Derived trails</h2>
+      <h2 id="derived-title">Trails Crumbly works out on its own</h2>
       <div class="prose">
-        <p>When a view does not call <code>breadcrumb</code>, the trail follows the action:</p>
+        <p>When a view doesn't call <code>breadcrumb</code>, Crumbly builds the trail from the action:</p>
         <table>
           <thead><tr><th scope="col">Action</th><th scope="col">Trail</th></tr></thead>
           <tbody>
-            <tr><td><code>index</code></td><td>The collection: your <code>posts</code> crumb, or else the model’s human plural name linked to the <code>index</code> route.</td></tr>
+            <tr><td><code>index</code></td><td>The collection: your <code>posts</code> crumb if you wrote one, or else the model's plural name linked to the <code>index</code> route.</td></tr>
             <tr><td><code>show</code></td><td>The record: your <code>post</code> crumb, or else its <code>to_s</code> linked to the <code>show</code> route, under the collection.</td></tr>
             <tr><td><code>new</code>, <code>create</code></td><td>"New" under the collection.</td></tr>
             <tr><td><code>edit</code>, <code>update</code></td><td>"Edit" under the record.</td></tr>
           </tbody>
         </table>
-        <p>The record is the one the controller already loaded, <code>@post</code> in <code>PostsController</code>: it is never looked up again, and without it <code>show</code> and <code>edit</code> derive no trail. A controller with no <code>index</code> or <code>show</code> route still gets its level, without a link. Other actions derive nothing.</p>
+        <p>The record is the one the controller has already loaded, <code>@post</code> in <code>PostsController</code>. Crumbly never runs a query to find it, and without it <code>show</code> and <code>edit</code> get no trail. A controller with no <code>index</code> or <code>show</code> route still gets its level, without a link. Other actions get nothing.</p>
         <h3>Labels</h3>
-        <p>"New" and "Edit" are translated through <code>crumbly.new</code> and <code>crumbly.edit</code>:</p>
+        <p>"New" and "Edit" come from the <code>crumbly.new</code> and <code>crumbly.edit</code> translations:</p>
 <pre><code class="language-yaml"><span class="c1"># config/locales/es.yml</span>
 <span class="na">es</span><span class="pi">:</span>
   <span class="na">crumbly</span><span class="pi">:</span>
     <span class="na">new</span><span class="pi">:</span> <span class="s">Nuevo</span>
     <span class="na">edit</span><span class="pi">:</span> <span class="s">Editar</span></code></pre>
         <h3>Overrides</h3>
-        <p>To change how a trail is derived in a namespace, override any of four private methods in its trail class: <code>collection_crumb</code>, <code>record_crumb(record)</code>, <code>new_record_crumb</code>, <code>edit_record_crumb(record)</code>. The <code>controller</code> they read is private too.</p>
+        <p>To change how these trails are built in a namespace, override any of four private methods in its trail class: <code>collection_crumb</code>, <code>record_crumb(record)</code>, <code>new_record_crumb</code> and <code>edit_record_crumb(record)</code>. The <code>controller</code> they read is private too.</p>
 <pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
   <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
     <span class="kp">private</span>
@@ -170,27 +170,27 @@
   <span class="k">end</span>
 <span class="k">end</span></code></pre>
         <h3>Nested routes</h3>
-        <p>Under a nested route, each <code>:&lt;name&gt;_id</code> path parameter is a parent level, outermost first. <code>/admin/posts/5/comments</code> gives Comments under Post 5 under Posts, the post being <code>@post</code>, as the controller loaded it: your <code>post</code> crumb, or else its <code>to_s</code> linked to its <code>show</code> route, under the posts collection.</p>
-        <p>A parent the controller did not load is never queried: the trail skips the nesting’s crumb, keeps that parent’s collection (Posts) and goes straight to the current level.</p>
+        <p>Under a nested route, each <code>:&lt;name&gt;_id</code> path parameter adds a parent level, outermost first. On <code>/admin/posts/5/comments</code>, the trail is Posts › Post 5 › Comments, and the post is the <code>@post</code> the controller loaded. Its level is your <code>post</code> crumb, or else its <code>to_s</code> linked to its <code>show</code> route.</p>
+        <p>If the controller didn't load a parent, Crumbly doesn't query it. It skips that level and the crumb named after the nesting, and keeps the parent's collection: Posts › Comments.</p>
       </div>
     </section>
 
     <section id="precedence" aria-labelledby="precedence-title">
-      <h2 id="precedence-title">Order of precedence</h2>
+      <h2 id="precedence-title">Which crumb wins</h2>
       <div class="prose">
-        <p>For any page, the first of these that applies builds the trail:</p>
+        <p>Crumbly takes the first of these that applies:</p>
         <ol>
-          <li>The view’s <code>breadcrumb</code>.</li>
-          <li>The namespace’s crumb named after the controller: <code>posts</code> in <code>Admin::PostsController#index</code>, and under a nested route the whole nesting, called with the parents’ records (<code>order_messages(order)</code> for <code>/admin/orders/42/messages</code>). On <code>show</code> and <code>edit</code>, the crumb named after the record’s model (<code>post</code>).</li>
-          <li>The derived trail, whose parent levels follow the same order: your crumb for the parent’s model, or else the derived level.</li>
+          <li>The crumb the view names with <code>breadcrumb</code>.</li>
+          <li>Your crumb named after the controller: <code>posts</code> in <code>Admin::PostsController#index</code>. Under a nested route it is named after the whole nesting and gets the parent records, so <code>/admin/orders/42/messages</code> calls <code>order_messages(order)</code>. On <code>show</code> and <code>edit</code>, it is the crumb named after the record's model (<code>post</code>).</li>
+          <li>The trail Crumbly works out. Its parent levels follow the same rule: your crumb for the parent's model if there is one, or else a level Crumbly builds.</li>
         </ol>
       </div>
     </section>
 
     <section id="tests" aria-labelledby="tests-title">
-      <h2 id="tests-title">Checked in tests</h2>
+      <h2 id="tests-title">Testing your trails</h2>
       <div class="prose">
-        <p>A crumb defined twice already raises when its class loads. One test checks the rest, without running a crumb or loading a record:</p>
+        <p>Add one test:</p>
 <pre><code class="language-ruby"><span class="c1"># test/breadcrumbs_test.rb</span>
 <span class="nb">require</span> <span class="s2">"test_helper"</span>
 <span class="nb">require</span> <span class="s2">"crumbly/test_helper"</span>
@@ -200,21 +200,22 @@
     <span class="n">assert_breadcrumbs_valid</span>
   <span class="k">end</span>
 <span class="k">end</span></code></pre>
-        <p>It eager-loads the app and reads the source of every crumb (and of the private helpers next to it) with Prism:</p>
+        <p>It loads the whole app and reads the source of every crumb, and of the private helpers next to it, without running them or touching the database. It fails when:</p>
         <ul>
-          <li>every parent a crumb calls is a crumb, and every <code>_path</code> or <code>_url</code> it calls is a route helper;</li>
-          <li>every <code>breadcrumb :name</code> in <code>app/views</code> and <code>app/controllers</code> names a crumb some trail defines;</li>
-          <li>every crumb is called with as many arguments as it takes, by its views and by other crumbs: gretel ignored extra arguments and passed <code>nil</code> for missing ones, a method raises <code>ArgumentError</code> (a view call spread over several lines, or with a splat, is not counted);</li>
-          <li>every crumb is reachable: called by another crumb, by a view or controller (<code>breadcrumb :name</code>, <code>breadcrumb @record</code>), by a derived trail (the collection and record of a routed controller), or named after a model. The others are dead, and fail the test.</li>
+          <li>a crumb's parent is not a crumb, or a <code>_path</code> or <code>_url</code> it calls is not a route helper;</li>
+          <li>a <code>breadcrumb :name</code> in <code>app/views</code> or <code>app/controllers</code> names a crumb that no trail class defines;</li>
+          <li>a view or another crumb calls a crumb with the wrong number of arguments. gretel ignored extra arguments and passed <code>nil</code> for missing ones, but a method raises <code>ArgumentError</code>. Calls spread over several lines, or with a splat, are skipped;</li>
+          <li>a crumb is never used. A crumb is used when another crumb, a view or a controller calls it (<code>breadcrumb :name</code>, <code>breadcrumb @record</code>), when a trail Crumbly works out reads it, or when it is named after a model.</li>
         </ul>
-        <p><code>Crumbly.verify!</code> does the same outside Minitest: it raises <code>Crumbly::InvalidTrail</code> with every problem in one message, and returns the dead crumbs (<code>["Admin::Breadcrumbs#drafts"]</code>). Both take <code>trail_classes:</code>, <code>routes:</code> and <code>sources:</code> (the directories scanned for <code>breadcrumb</code> calls).</p>
+        <p>A crumb defined twice in the same class is caught even earlier: the class raises <code>Crumbly::DuplicateCrumb</code> when it loads.</p>
+        <p>Outside Minitest, <code>Crumbly.verify!</code> runs the same checks. It raises <code>Crumbly::InvalidTrail</code> with every problem in one message, and returns the unused crumbs (<code>["Admin::Breadcrumbs#drafts"]</code>). Both accept <code>trail_classes:</code>, <code>routes:</code> and <code>sources:</code>, the directories it scans for <code>breadcrumb</code> calls.</p>
       </div>
     </section>
 
     <section id="storefronts" aria-labelledby="storefronts-title">
-      <h2 id="storefronts-title">Storefronts</h2>
+      <h2 id="storefronts-title">Breadcrumbs for search engines</h2>
       <div class="prose">
-        <p>The trail is data, so absolute URLs are just <code>_url</code> helpers in that namespace’s crumbs. They read the host from the current request.</p>
+        <p>Google can show a page's trail in its results when the page describes it as schema.org structured data. Google needs absolute URLs, so use <code>_url</code> helpers in the crumbs of that namespace. They take the host from the current request.</p>
 <pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Storefront</span>
   <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
     <span class="k">def</span> <span class="nf">shop</span>
@@ -228,15 +229,15 @@
   <span class="k">end</span>
 <span class="k">end</span></code></pre>
         <h3>JSON-LD</h3>
-        <p><code>breadcrumb_json_ld</code> renders the same trail as a schema.org <code>BreadcrumbList</code>, the structured data Google reads for its breadcrumb rich result:</p>
+        <p><code>breadcrumb_json_ld</code> writes that description for the current trail. Put it in the <code>&lt;head&gt;</code>:</p>
 <pre><code class="language-erb"><span class="c">&lt;%# app/views/layouts/storefront.html.erb, in &lt;head&gt; %&gt;</span>
 <span class="cp">&lt;%=</span> <span class="n">breadcrumb_json_ld</span> <span class="cp">%&gt;</span></code></pre>
         <ul>
-          <li>Positions start at 1, and the current level may have no URL. A level above it without a URL is not a page, so it is left out.</li>
-          <li>A name is plain text: an <code>html_safe</code> label (an icon, a <code>&lt;b&gt;</code>) has its markup stripped and its entities decoded.</li>
-          <li>The JSON is escaped for a <code>&lt;script&gt;</code> tag, so a label cannot close it.</li>
-          <li>Google only takes absolute URLs: a relative one raises <code>Crumbly::RelativeUrl</code> in development and test. In production it is reported and the page renders without a <code>BreadcrumbList</code>. Set <code>Crumbly.raise_on_relative_url</code> to choose.</li>
-          <li><code>Crumbly::JsonLd.call(levels)</code> returns the <code>BreadcrumbList</code> as a hash, for a page that builds its own structured data.</li>
+          <li>Positions start at 1. The last level may have no URL. A level above it without a URL isn't a page, so it is left out.</li>
+          <li>Names are plain text. If a label is <code>html_safe</code> (an icon, a <code>&lt;b&gt;</code>), its tags are removed.</li>
+          <li>The JSON is escaped for a <code>&lt;script&gt;</code> tag, so a label can't close it.</li>
+          <li>A relative URL raises <code>Crumbly::RelativeUrl</code> in development and test. In production it is reported to <code>Rails.error</code> and the page has no structured data. <code>Crumbly.raise_on_relative_url</code> changes this.</li>
+          <li><code>Crumbly::JsonLd.call(levels)</code> returns the same data as a hash, if you build the structured data of the page yourself.</li>
         </ul>
       </div>
     </section>
@@ -248,14 +249,14 @@
         <table class="options">
           <thead><tr><th scope="col">Error</th><th scope="col">When</th></tr></thead>
           <tbody>
-            <tr><td><code>Crumbly::DuplicateCrumb</code></td><td>A trail class defines the same public method twice. Raised when the class loads, so at boot with eager loading, and in any test that loads it.</td></tr>
-            <tr><td><code>Crumbly::UnknownCrumb</code></td><td>A view names a crumb that does not exist, or <code>breadcrumb @record</code> / <code>crumb_for</code> finds no crumb for the record’s model, or for a <code>nil</code> record. Raised in development and test; in production, reported through <code>Rails.error</code> and the page renders without a trail.</td></tr>
-            <tr><td><code>Crumbly::MissingTrail</code></td><td>A view reads the trail of a controller that has no trail class, neither found from its module nor set with <code>breadcrumbs_with</code>. The message names the class to define.</td></tr>
-            <tr><td><code>Crumbly::InvalidTrail</code></td><td><a href="#tests"><code>Crumbly.verify!</code></a> finds a crumb calling an unknown crumb or route helper, or a <code>breadcrumb :name</code> that no trail defines. The message lists every problem at once; <code>assert_breadcrumbs_valid</code> turns it into a test failure.</td></tr>
-            <tr><td><code>Crumbly::RelativeUrl</code></td><td><a href="#storefronts"><code>breadcrumb_json_ld</code></a> meets a level whose URL is not absolute. Raised in development and test; in production, reported through <code>Rails.error</code> and the page renders without a <code>BreadcrumbList</code>.</td></tr>
+            <tr><td><code>Crumbly::DuplicateCrumb</code></td><td>A trail class defines the same public method twice. It is raised when the class loads: at boot with eager loading, and in any test that loads the class.</td></tr>
+            <tr><td><code>Crumbly::UnknownCrumb</code></td><td>A view names a crumb that doesn't exist, or <code>breadcrumb @record</code> or <code>crumb_for</code> finds no crumb for the record's model, or the record is <code>nil</code>. It is raised in development and test. In production it is reported to <code>Rails.error</code>, and the page renders without a trail.</td></tr>
+            <tr><td><code>Crumbly::MissingTrail</code></td><td>A view reads the trail of a controller that has no trail class, found from its module or set with <code>breadcrumbs_with</code>. The message names the class to define.</td></tr>
+            <tr><td><code>Crumbly::InvalidTrail</code></td><td><a href="#tests"><code>Crumbly.verify!</code></a> found a crumb calling an unknown crumb or route helper, or a <code>breadcrumb :name</code> that no trail defines. The message lists every problem at once, and <code>assert_breadcrumbs_valid</code> turns it into a test failure.</td></tr>
+            <tr><td><code>Crumbly::RelativeUrl</code></td><td><a href="#storefronts"><code>breadcrumb_json_ld</code></a> found a level whose URL is not absolute. It is raised in development and test. In production it is reported to <code>Rails.error</code>, and the page has no <code>BreadcrumbList</code>.</td></tr>
           </tbody>
         </table>
-        <p>To change where an unknown crumb or a relative URL raises, set it in an initializer:</p>
+        <p>To choose when an unknown crumb or a relative URL raises, set it in an initializer:</p>
 <pre><code class="language-ruby"><span class="c1"># config/initializers/crumbly.rb</span>
 <span class="no">Crumbly</span><span class="p">.</span><span class="nf">raise_on_unknown_crumb</span> <span class="o">=</span> <span class="kp">true</span> <span class="c1"># on staging too</span>
 <span class="no">Crumbly</span><span class="p">.</span><span class="nf">raise_on_relative_url</span> <span class="o">=</span> <span class="kp">true</span></code></pre>
