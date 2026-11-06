@@ -75,4 +75,37 @@ class TrailTest < IntegrationTestCase
                  "Shipments|/admin/orders/42/shipments|current",
       "/admin/orders/42/shipments"
   end
+
+  test "a record without its own to_s is named after its model and id" do
+    assert_trail "Home|/admin > Invoices|/admin/invoices > Invoice 12|/admin/invoices/12|current", "/admin/invoices/12"
+    assert_trail "Home|/admin > Invoices|/admin/invoices > Invoice 12|/admin/invoices/12 > " \
+                 "Payments|/admin/invoices/12/payments|current",
+      "/admin/invoices/12/payments"
+  end
+
+  test "the model name of a record without its own to_s is translated" do
+    I18n.backend.store_translations(:en, activemodel: {models: {invoice: {one: "Bill", other: "Bills"}}})
+
+    assert_trail "Home|/admin > Bills|/admin/invoices > Bill 12|/admin/invoices/12|current", "/admin/invoices/12"
+  ensure
+    I18n.reload!
+  end
+
+  test "with derive_trails false, a view that names no crumb has no trail, and one that does keeps it" do
+    assert_trail "[] nil", "/backstage/posts"
+    assert_trail "Home|/admin > Categories|/admin/categories > Books|/admin/categories/1 > " \
+                 "Fiction|/admin/categories/2 > Novels|/admin/categories/3|current",
+      "/backstage/categories/3"
+  end
+
+  test "derive_trails is inherited, can be turned back on, and is not a crumb" do
+    assert Admin::Breadcrumbs.derive_trails?
+    assert_not Backstage::Breadcrumbs.derive_trails?
+    assert_not Class.new(Backstage::Breadcrumbs).derive_trails?
+    assert Class.new(Backstage::Breadcrumbs) { derive_trails true }.derive_trails?
+    assert_not Backstage::Breadcrumbs.crumb?(:derive_trails)
+
+    error = assert_raises(ArgumentError) { Class.new(Crumbly::Trail) { derive_trails nil } }
+    assert_equal "derive_trails takes true or false, not nil", error.message
+  end
 end

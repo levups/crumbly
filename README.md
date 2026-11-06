@@ -169,19 +169,33 @@ When a view doesn't call `breadcrumb`, Crumbly builds the trail from the action:
 | Action | Trail |
 |---|---|
 | `index` | the collection: your `posts` crumb if you wrote one, or else the model's plural name linked to the `index` route |
-| `show` | the record: your `post` crumb, or else its `to_s` linked to the `show` route, under the collection |
+| `show` | the record: your `post` crumb, or else its label linked to the `show` route, under the collection |
 | `new`, `create` | "New" under the collection |
 | `edit`, `update` | "Edit" under the record |
 
 The record is the one the controller has already loaded, `@post` in `PostsController`. Crumbly never runs a query
 to find it. "New" and "Edit" come from the `crumbly.new` and `crumbly.edit` translations, so you can translate
-them.
+them. A record's label is its `to_s`. A model without a `to_s` of its own gets its translated model name and id
+instead ("Post 5"), not `#<Post:0x000...>`.
 
 Nested routes work too. On `/admin/posts/5/comments`, the trail is Posts › Post 5 › Comments, and the post is
 the `@post` the controller loaded. If the controller didn't load it, Crumbly skips that level and keeps Posts.
 
 To change how these trails are built, override the private methods `collection_crumb`, `record_crumb`,
 `new_record_crumb` or `edit_record_crumb` in your trail class.
+
+To turn them off, set `derive_trails false` in the trail class. A view that doesn't call `breadcrumb` then has no
+trail, as with gretel: `breadcrumb_trail` returns `[]` and `breadcrumb_json_ld` returns `nil`.
+
+```ruby
+module Admin
+  class Breadcrumbs < Crumbly::Trail
+    derive_trails false
+  end
+end
+```
+
+Subclasses inherit the setting, and `derive_trails true` turns it back on in one of them.
 
 ### Which crumb wins
 
@@ -193,6 +207,8 @@ Crumbly takes the first of these that applies:
    `order_messages(order)`. On `show` and `edit`, it is the crumb named after the record's model (`post`).
 3. The trail Crumbly works out. Its parent levels follow the same rule: your crumb for the parent's model if there
    is one, or else a level Crumbly builds.
+
+With `derive_trails false`, only the first applies.
 
 ## Testing your trails
 
@@ -218,7 +234,7 @@ fails when:
 - a view or another crumb calls a crumb with the wrong number of arguments (calls spread over several lines, or
   with a splat, are skipped);
 - a crumb is never used. A crumb is used when another crumb, a view or a controller calls it, when a trail
-  Crumbly works out reads it, or when it is named after a model.
+  Crumbly works out reads it (unless its class sets `derive_trails false`), or when it is named after a model.
 
 A crumb defined twice in the same class is caught even earlier: the class raises `Crumbly::DuplicateCrumb` when it
 loads.
@@ -296,6 +312,7 @@ It prints each line it left out or couldn't convert exactly, and with `--views`,
 Crumbly may now make unnecessary. It needs Prism 1.2 or later: Ruby 3.4 comes with it, and on Ruby 3.3 you add
 `gem "prism"` to the development group. While gretel is still installed on the migration branch,
 `Crumbly::Oracle` draws each trail your tests render with both gems and lists where the labels or URLs differ.
+To keep gretel's empty trail on pages whose views name no crumb, set `derive_trails false` in the trail class.
 
 The [migration guide](https://levups.github.io/crumbly/migration.html) has every step: what the converter maps to
 what, what it leaves to you, the comparison in your tests, and the same walk-through for loaf and
