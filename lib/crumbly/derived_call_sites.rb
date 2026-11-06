@@ -25,8 +25,8 @@ module Crumbly
     def self.call_sites(path)
       action = File.basename(path).split(".").first
       controller_name = File.basename(File.dirname(path))
-      File.foreach(path).with_index(1).filter_map do |line, number|
-        match = BREADCRUMB_CALL.match(line)
+      File.foreach(path, encoding: Encoding::UTF_8).with_index(1).filter_map do |line, number|
+        match = BREADCRUMB_CALL.match(line.scrub)
         reason = match && reason(match[:target], match[:arguments].strip.delete_suffix(")").strip, action, controller_name)
         CallSite.new(path:, line: number, code: match[0].strip, reason:) if reason
       end

@@ -86,14 +86,14 @@
         <h3>In a view</h3>
         <ul>
           <li><code>breadcrumb :name, *arguments</code> calls the crumb named <code>name</code> with those arguments.</li>
-          <li><code>breadcrumb @record</code> calls the crumb named after the record’s model (<code>order</code> for an <code>Order</code>). A single-table inheritance subclass with no crumb of its own falls back on its parent class’s.</li>
+          <li><code>breadcrumb @record</code> calls the crumb named after the record’s model (<code>order</code> for an <code>Order</code>). A single-table inheritance subclass with no crumb of its own falls back on its parent class’s. A <code>nil</code> record (<code>@order</code> not loaded) is an unknown crumb.</li>
           <li>A view that calls neither gets a <a href="#derived">derived trail</a>.</li>
         </ul>
         <h3>In a trail class</h3>
         <table class="options">
           <thead><tr><th scope="col">Method</th><th scope="col">What it does</th></tr></thead>
           <tbody>
-            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> takes a string, a record or a polymorphic array (<code>[:admin, owner, :returns]</code>), or nothing for a level without a link.</td></tr>
+            <tr><td><code>crumb label, url = nil, parent: nil, links: []</code></td><td>One level. <code>url</code> takes a string, a record or a polymorphic array (<code>[:admin, owner, :returns]</code>), or nothing for a level without a link. A string URL is used as it is: one that comes from your users can be <code>javascript:</code>, so check its scheme first.</td></tr>
             <tr><td><code>link label, url</code></td><td>An extra link, for <code>links:</code>, when a level points to more than one page.</td></tr>
             <tr><td><code>crumb_for record</code></td><td>The crumb of a record, found by its model: how you write a polymorphic parent.</td></tr>
             <tr><td><code>helpers</code></td><td>The view context: <code>helpers.t(".orders")</code>, <code>helpers.current_user</code>.</td></tr>
@@ -249,7 +249,7 @@
           <thead><tr><th scope="col">Error</th><th scope="col">When</th></tr></thead>
           <tbody>
             <tr><td><code>Crumbly::DuplicateCrumb</code></td><td>A trail class defines the same public method twice. Raised when the class loads, so at boot with eager loading, and in any test that loads it.</td></tr>
-            <tr><td><code>Crumbly::UnknownCrumb</code></td><td>A view names a crumb that does not exist, or <code>breadcrumb @record</code> / <code>crumb_for</code> finds no crumb for the record’s model. Raised in development and test; in production, reported through <code>Rails.error</code> and the page renders without a trail.</td></tr>
+            <tr><td><code>Crumbly::UnknownCrumb</code></td><td>A view names a crumb that does not exist, or <code>breadcrumb @record</code> / <code>crumb_for</code> finds no crumb for the record’s model, or for a <code>nil</code> record. Raised in development and test; in production, reported through <code>Rails.error</code> and the page renders without a trail.</td></tr>
             <tr><td><code>Crumbly::MissingTrail</code></td><td>A view reads the trail of a controller that has no trail class, neither found from its module nor set with <code>breadcrumbs_with</code>. The message names the class to define.</td></tr>
             <tr><td><code>Crumbly::InvalidTrail</code></td><td><a href="#tests"><code>Crumbly.verify!</code></a> finds a crumb calling an unknown crumb or route helper, or a <code>breadcrumb :name</code> that no trail defines. The message lists every problem at once; <code>assert_breadcrumbs_valid</code> turns it into a test failure.</td></tr>
             <tr><td><code>Crumbly::RelativeUrl</code></td><td><a href="#storefronts"><code>breadcrumb_json_ld</code></a> meets a level whose URL is not absolute. Raised in development and test; in production, reported through <code>Rails.error</code> and the page renders without a <code>BreadcrumbList</code>.</td></tr>

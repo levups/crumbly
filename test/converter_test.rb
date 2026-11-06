@@ -397,6 +397,48 @@ class ConverterTest < ActiveSupport::TestCase
     assert_includes result.ruby, "def orders\n    crumb \"orders\"\n  end"
   end
 
+  test "an =begin comment becomes # lines, which the class body can indent" do
+    assert_crumb <<~RUBY, <<~GRETEL
+      # The orders
+      #
+      # all of them
+      # Shown first
+      def orders
+        crumb "Orders", "/orders"
+      end
+    RUBY
+      =begin
+      The orders
+
+      all of them
+      =end
+      crumb :orders do
+      =begin
+      Shown first
+      =end
+        link "Orders", "/orders"
+      end
+    GRETEL
+  end
+
+  test "a loop value is written as text in a string, but stays interpolated in a regexp or a %W array" do
+    assert_crumb <<~'RUBY', <<~'GRETEL'
+      def sales_report
+        crumb "/admin/sales", "/admin/sales",
+          parent: (root if helpers.request.path.match?(/\A\/#{"admin/sales"}/)),
+          links: [link(%W[#{"admin/sales"} x].join, nil)]
+      end
+    RUBY
+      {sales_report: "admin/sales"}.each do |name, path|
+        crumb name do
+          link "/#{path}", "/#{path}"
+          link %W[#{path} x].join
+          parent :root if request.path.match?(/\A\/#{path}/)
+        end
+      end
+    GRETEL
+  end
+
   test "a file Ruby cannot parse raises with its line" do
     error = assert_raises(ArgumentError) { Crumbly::Converter.call({"breadcrumbs.rb" => "crumb :a do\n"}) }
     assert_match(/\Abreadcrumbs.rb:\d+: /, error.message)

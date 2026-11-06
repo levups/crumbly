@@ -8,7 +8,8 @@ require "loofah"
 module Crumbly
   # A schema.org BreadcrumbList, as Google's Rich Results test reads it.
   module JsonLd
-    ABSOLUTE_URL_PREFIXES = ["https://", "http://"].freeze
+    # A scheme is case-insensitive: HTTPS://example.com is absolute too.
+    ABSOLUTE_URL = %r{\Ahttps?://}i
 
     class << self
       def call(levels)
@@ -19,7 +20,7 @@ module Crumbly
 
           list_item = {"@type" => "ListItem", "position" => list_items.size + 1, "name" => plain_text(level.label)}
           if level.url
-            return relative_url(level) unless level.url.start_with?(*ABSOLUTE_URL_PREFIXES)
+            return relative_url(level) unless ABSOLUTE_URL.match?(level.url)
 
             list_item["item"] = level.url
           end
@@ -32,10 +33,13 @@ module Crumbly
 
       private
 
+      # A label read from bytes that are not UTF-8 gets replacement characters, instead of failing the page.
       def plain_text(label)
-        return label.to_s.squish unless label.html_safe?
+        text = label.to_s
+        text = text.scrub unless text.valid_encoding?
+        return text.squish unless label.html_safe?
 
-        Loofah.html5_fragment(label).scrub!(:prune).text(encode_special_chars: false).squish
+        Loofah.html5_fragment(text).scrub!(:prune).text(encode_special_chars: false).squish
       end
 
       def relative_url(level)

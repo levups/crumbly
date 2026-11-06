@@ -71,11 +71,12 @@ end
 
 - `breadcrumb :name, *arguments` calls the crumb named `name`, and `breadcrumb @record` calls the crumb named
   after the record's model (`order` for an `Order`). For a single-table inheritance subclass with no crumb of
-  its own, it falls back on its parent class's.
+  its own, it falls back on its parent class's. A `nil` record (`@order` not loaded) is an unknown crumb.
 - `root`, when you define it, starts every trail.
 - `crumb label, url = nil, parent: nil, links: []`. `url` takes a string, a record or a polymorphic array
   (`[:admin, owner, :returns]`), or nothing for a level without a link. `links:` holds extra
-  `link(label, url)`s for a level that points to more than one page.
+  `link(label, url)`s for a level that points to more than one page. A string URL is used as it is: one that
+  comes from your users can be `javascript:`, so check its scheme first.
 - `crumb_for(record)` is the crumb of a record found by its model, which is how you write a polymorphic parent.
 - Private methods are helpers, not crumbs. View helpers are reached through `helpers` (`helpers.t(".orders")`).
 - Every name that works in a view is a crumb, so `Crumbly::Trail` keeps its own methods private. The ones

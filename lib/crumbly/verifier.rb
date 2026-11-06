@@ -88,7 +88,9 @@ module Crumbly
     def verify_sources
       defined_names = trail_classes.flat_map { |trail_class| crumb_names(trail_class) }.to_set
       source_files.each do |path|
-        File.foreach(path).with_index(1) do |line, number|
+        # An image or a Latin-1 template is read too: an invalid byte cannot fail the verification.
+        File.foreach(path, encoding: Encoding::UTF_8).with_index(1) do |line, number|
+          line = line.scrub
           line.to_enum(:scan, BREADCRUMB_CALL).each do
             match = Regexp.last_match
             symbol, string, instance_variable = match.captures

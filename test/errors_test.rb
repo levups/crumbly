@@ -66,6 +66,36 @@ class ErrorsTest < ActiveSupport::TestCase
     ActiveSupport.error_reporter.unsubscribe(reports)
   end
 
+  test "a view passing nil or an object without a model raises outside production" do
+    error = assert_raises(Crumbly::UnknownCrumb) { Admin::Breadcrumbs.resolve(nil, nil) }
+    assert_equal "Admin::Breadcrumbs has no crumb for nil: pass a crumb name or a record", error.message
+
+    error = assert_raises(Crumbly::UnknownCrumb) { Admin::Breadcrumbs.resolve(nil, {"id" => "1"}) }
+    assert_equal "Admin::Breadcrumbs has no crumb for a Hash: pass a crumb name or a record", error.message
+  end
+
+  test "a view passing nil is reported in production and leaves the page without a trail" do
+    reports = Reports.new
+    ActiveSupport.error_reporter.subscribe(reports)
+    Crumbly.raise_on_unknown_crumb = false
+
+    assert_equal [], Admin::Breadcrumbs.resolve(nil, nil)
+    assert_equal ["Admin::Breadcrumbs has no crumb for nil: pass a crumb name or a record"], reports.errors.map(&:message)
+  ensure
+    Crumbly.raise_on_unknown_crumb = nil
+    ActiveSupport.error_reporter.unsubscribe(reports)
+  end
+
+  test "a parent that is not a crumb raises, naming what it got" do
+    trail_class = Class.new(Crumbly::Trail) do
+      def orders = crumb("Orders")
+      def order = crumb("Order", parent: :orders)
+    end
+
+    error = assert_raises(ArgumentError) { trail_class.resolve(nil, :order) }
+    assert_equal "parent: takes a crumb, such as parent: orders, not :orders", error.message
+  end
+
   test "a controller outside any namespace with breadcrumbs says where to define them" do
     controller_class = Class.new(ActionController::Base) { def self.name = "OrdersController" }
     error = assert_raises(Crumbly::MissingTrail) { Crumbly.trail_class_for(controller_class) }

@@ -35,9 +35,16 @@ module Crumbly
       end
 
       def comment_lines(from_offset, to_offset)
-        comments.filter_map do |comment|
-          comment.slice.rstrip if comment.location.start_offset.between?(from_offset, to_offset - 1)
-        end
+        comments.select { |comment| comment.location.start_offset.between?(from_offset, to_offset - 1) }
+          .flat_map { |comment| self.class.comment_text(comment) }
+      end
+
+      # The lines of a comment. An =begin block must start at column 0, which the class body indents: its lines
+      # become # comments.
+      def self.comment_text(comment)
+        return [comment.slice.rstrip] unless comment.is_a?(Prism::EmbDocComment)
+
+        comment.slice.lines[1...-1].map { |line| "# #{line.rstrip}".rstrip }
       end
 
       # Blanks everything before the expanded text, so that its lines and columns stay those of this file.

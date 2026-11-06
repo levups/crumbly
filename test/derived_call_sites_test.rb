@@ -36,4 +36,14 @@ class DerivedCallSitesTest < ActiveSupport::TestCase
       VIEWS.each { |path, content| assert_equal content, File.read("#{directory}/#{path}") }
     end
   end
+
+  test "a view that is not UTF-8 is read without failing" do
+    Dir.mktmpdir do |directory|
+      FileUtils.mkdir_p("#{directory}/orders")
+      File.binwrite("#{directory}/orders/index.html.erb", "<h1>Caf\xE9</h1>\n<% breadcrumb :orders %>\n")
+
+      assert_equal ["orders/index.html.erb:2: breadcrumb :orders (index derives the orders crumb)"],
+        Crumbly::DerivedCallSites.call(directory).map { |call_site| call_site.to_s.delete_prefix("#{directory}/") }
+    end
+  end
 end
