@@ -34,18 +34,18 @@
   <main id="content">
     <header class="hero">
       <h1 class="wordmark">Crumbly</h1>
-      <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">The line of links that shows where a page sits, written in plain Ruby.</span></p>
+      <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">The line of links at the top of a page that shows where it sits in the site.</span></p>
       <div>
         <p class="summary">Each level of a trail, such as Home › Orders › Order 42, is a Ruby method that names its parent. On most pages you write nothing at all: Crumbly works the trail out from the controller and the routes. A test checks every trail before you ship.</p>
         <code class="install">gem "crumbly"</code>
-        <p class="links"><a href="guide.html">Get started</a><a href="migration.html">Migrating from gretel</a><a href="benchmarks.html">Benchmarks</a></p>
+        <p class="links"><a href="guide.html">Get started</a><a href="migration.html">Migration guide</a><a href="benchmarks.html">Benchmarks</a></p>
       </div>
     </header>
 
     <section aria-labelledby="start-title">
       <h2 id="start-title">How it works</h2>
       <div class="prose">
-        <p>Add the gem, then write a class with one method per crumb. Each method returns a label, a URL and, if it has one, its parent. The layout loops over <code>breadcrumb_trail</code> and writes whatever HTML you like.</p>
+        <p>Add the gem (it needs Ruby 3.3 or later and Rails 8.0 or later), then write a class with one method per crumb. Each method returns a label, a URL and, if it has one, its parent. The layout loops over <code>breadcrumb_trail</code> and writes whatever HTML you like.</p>
       </div>
       <div class="split">
         <div>
@@ -122,8 +122,13 @@
         </div>
         <div class="card">
           <h3>A converter from gretel</h3>
-          <p><code>crumbly-convert</code> turns <code>config/breadcrumbs.rb</code> into a trail class. While both gems are installed, your tests can compare the trails they draw.</p>
+          <p><code>crumbly-convert</code> turns <code>config/breadcrumbs.rb</code> into a trail class. While both gems are installed, your tests can compare the trails they draw. The migration guide also covers loaf and breadcrumbs_on_rails.</p>
           <p><a href="migration.html#gretel">From gretel</a></p>
+        </div>
+        <div class="card">
+          <h3>Faster than gretel</h3>
+          <p>A five-level trail renders as an <code>&lt;ol&gt;</code> in 45.4 µs, against 57.6 µs for gretel, with 274 allocations instead of 345 (YJIT off). The JSON-LD is a little slower, mostly because Rails' <code>_url</code> helpers are slower than <code>_path</code> ones.</p>
+          <p><a href="benchmarks.html">Benchmarks</a></p>
         </div>
       </div>
     </section>
