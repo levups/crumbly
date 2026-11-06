@@ -39,7 +39,7 @@
     <section aria-labelledby="results-title">
       <h2 id="results-title">Rendering a trail</h2>
       <div class="prose">
-        <p><code>bench/render.rb</code> renders the same five-level trail (Home &gt; Customers &gt; Alice &gt; Orders &gt; Order 2026-0042) with gretel and with Crumbly, and checks that both produce the same output. The <code>&lt;ol&gt;</code> is gretel’s <code>breadcrumbs(style: :ol)</code> against a ten-line helper over <code>breadcrumb_trail</code>. The JSON-LD is gretel’s <code>structured_data(url_base:)</code> (paths behind a prefix) against <code>breadcrumb_json_ld</code> (<code>_url</code> helpers), both encoded and escaped the same way.</p>
+        <p><code>bench/render.rb</code> renders the same five-level trail (Home &gt; Customers &gt; Alice &gt; Orders &gt; Order 2026-0042) with gretel and with Crumbly, and checks that both give the same output. The <code>&lt;ol&gt;</code> row compares gretel's <code>breadcrumbs(style: :ol)</code> with a ten-line helper over <code>breadcrumb_trail</code>. The JSON-LD row compares gretel's <code>structured_data(url_base:)</code>, with paths behind a prefix, and <code>breadcrumb_json_ld</code> with <code>_url</code> helpers. Both are encoded and escaped the same way.</p>
         <table>
           <caption>Ruby 4.0.9, Rails 8.1.4, gretel 5.1.0, Apple M5 (arm64 macOS), median of three runs of benchmark-ips</caption>
           <thead><tr><th scope="col">Render</th><th scope="col">Allocations</th><th scope="col">Time, YJIT off</th><th scope="col">Time, YJIT on</th></tr></thead>
@@ -50,7 +50,7 @@
             <tr><th scope="row">Crumbly JSON-LD</th><td>287</td><td>43.3 µs</td><td>29.5 µs</td></tr>
           </tbody>
         </table>
-        <p>Most of the JSON-LD gap comes from Rails’ <code>_url</code> helpers, which are slower than <code>_path</code> ones: building the <code>BreadcrumbList</code> from the levels accounts for 1.7 µs of it.</p>
+        <p>Crumbly's JSON-LD is a little slower, mostly because Rails' <code>_url</code> helpers are slower than <code>_path</code> ones. Building the <code>BreadcrumbList</code> from the levels takes 1.7 µs of the difference.</p>
       </div>
     </section>
 
@@ -60,7 +60,7 @@
         <p>From a checkout of the gem, once with YJIT off and once with it on:</p>
 <pre><code class="language-sh">bundle <span class="nb">exec </span>ruby bench/render.rb
 bundle <span class="nb">exec </span>ruby <span class="nt">--yjit</span> bench/render.rb</code></pre>
-        <p>Run each three times and keep the median. Numbers depend on the machine: compare the two gems on the same one, not against this table.</p>
+        <p>Run each three times and keep the median. The numbers depend on the machine, so compare the two gems on the same one rather than with this table.</p>
       </div>
     </section>
   </main>

@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crumbly — breadcrumbs for Rails</title>
-<meta name="description" content="Breadcrumbs for Rails: one class per namespace, one Ruby method per crumb, trails derived from your routes, mistakes raised early.">
-<meta property="og:title" content="Crumbly — breadcrumbs for Rails">
-<meta property="og:description" content="Namespaced breadcrumbs, derived from your routes, checked in tests. The trail is data your own components render.">
+<title>Crumbly: breadcrumbs for Rails</title>
+<meta name="description" content="Crumbly builds the breadcrumb trails of a Rails app from plain Ruby methods, works most of them out from the routes, and checks them all in one test.">
+<meta property="og:title" content="Crumbly: breadcrumbs for Rails">
+<meta property="og:description" content="Breadcrumb trails for Rails, written as plain Ruby methods. Most pages get theirs from the routes, and one test checks them all.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://levups.github.io/crumbly/">
 <meta property="og:url" content="https://levups.github.io/crumbly/">
 <meta property="og:site_name" content="Level UP Solutions">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"Crumbly","description":"Breadcrumbs for Rails: namespaced, derived from your routes, checked in tests","url":"https://levups.github.io/crumbly/","codeRepository":"https://github.com/levups/crumbly","programmingLanguage":"Ruby","runtimePlatform":"Ruby 3.3 or later","license":"https://spdx.org/licenses/MIT.html","author":{"@type":"Organization","name":"Level UP Solutions","url":"https://levups.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"Crumbly","description":"Breadcrumb trails for Rails, written as plain Ruby methods and checked in tests","url":"https://levups.github.io/crumbly/","codeRepository":"https://github.com/levups/crumbly","programmingLanguage":"Ruby","runtimePlatform":"Ruby 3.3 or later","license":"https://spdx.org/licenses/MIT.html","author":{"@type":"Organization","name":"Level UP Solutions","url":"https://levups.com"}}</script>
 <meta name="theme-color" content="#9a5b00">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,77 +34,111 @@
   <main id="content">
     <header class="hero">
       <h1 class="wordmark">Crumbly</h1>
-      <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">Namespaced, derived from your routes, checked in tests.</span></p>
+      <p class="byline"><span>Breadcrumbs for Rails.</span><span class="byline-sub">The line of links that shows where a page sits, written in plain Ruby.</span></p>
       <div>
-        <p class="summary">One class of plain Ruby methods per namespace. A view that names no crumb gets the trail of its action. The trail comes back as data, and your own component renders it.</p>
+        <p class="summary">Each level of a trail, such as Home › Orders › Order 42, is a Ruby method that names its parent. On most pages you write nothing at all: Crumbly works the trail out from the controller and the routes. A test checks every trail before you ship.</p>
         <code class="install">gem "crumbly"</code>
         <p class="links"><a href="guide.html">Get started</a><a href="migration.html">Migrating from gretel</a><a href="benchmarks.html">Benchmarks</a></p>
       </div>
     </header>
 
-    <section aria-labelledby="why-title">
-      <h2 id="why-title">Why</h2>
+    <section aria-labelledby="start-title">
+      <h2 id="start-title">How it works</h2>
       <div class="prose">
-        <p><a href="https://github.com/kzkn/gretel">gretel</a> works. But on a real back office (one file of about 1,000 lines, 265 crumbs, 380 call sites), its shape is what hurts:</p>
-        <ul>
-          <li>one global file and one flat namespace, where a crumb defined twice silently replaces the first, and an admin area cannot keep its breadcrumbs apart from a storefront’s;</li>
-          <li>mistakes that only show when someone opens the page;</li>
-          <li>blocks run through <code>instance_exec</code>, and helpers reached through <code>method_missing</code>;</li>
-          <li>every trail written by hand, even when the routes already describe it.</li>
-        </ul>
-        <p>Crumbly keeps gretel’s good idea, a crumb names its parent, and changes the rest.</p>
+        <p>Add the gem, then write a class with one method per crumb. Each method returns a label, a URL and, if it has one, its parent. The layout loops over <code>breadcrumb_trail</code> and writes whatever HTML you like.</p>
+      </div>
+      <div class="split">
+        <div>
+          <p class="code-label">app/breadcrumbs/admin/breadcrumbs.rb</p>
+<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="k">def</span> <span class="nf">root</span>
+      <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">orders</span>
+      <span class="n">crumb</span> <span class="s2">"Orders"</span><span class="p">,</span> <span class="n">admin_orders_path</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+      <span class="n">crumb</span> <span class="n">order</span><span class="p">.</span><span class="nf">to_s</span><span class="p">,</span> <span class="n">admin_order_path</span><span class="p">(</span><span class="n">order</span><span class="p">),</span> <span class="ss">parent: </span><span class="n">orders</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+        </div>
+        <div>
+          <p class="code-label">app/views/layouts/admin.html.erb</p>
+<pre><code class="language-erb"><span class="nt">&lt;nav</span> <span class="na">aria-label=</span><span class="s">"Breadcrumb"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;ol&gt;</span>
+    <span class="cp">&lt;%</span> <span class="n">breadcrumb_trail</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">level</span><span class="o">|</span> <span class="cp">%&gt;</span>
+      <span class="nt">&lt;li&gt;</span><span class="cp">&lt;%=</span> <span class="n">link_to_unless</span> <span class="n">level</span><span class="p">.</span><span class="nf">current?</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">label</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">url</span> <span class="cp">%&gt;</span><span class="nt">&lt;/li&gt;</span>
+    <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span>
+  <span class="nt">&lt;/ol&gt;</span>
+<span class="nt">&lt;/nav&gt;</span></code></pre>
+        </div>
+      </div>
+      <div class="prose">
+        <p>On an order page the trail is now Home › Orders › Order 42. A view can name its crumb with <code>breadcrumb @order</code>, but this one doesn't have to: a <code>show</code> page gets the trail of the record its controller loaded. The <a href="guide.html">guide</a> covers the rest.</p>
       </div>
     </section>
 
     <section aria-labelledby="changes-title">
-      <h2 id="changes-title">What changes</h2>
+      <h2 id="changes-title">What you get</h2>
       <div class="cards">
         <div class="card">
-          <h3>One class per namespace</h3>
-          <p><code>Admin::Breadcrumbs</code> and <code>Storefront::Breadcrumbs</code> each hold their own crumbs, under the same names if they like. Zeitwerk loads them, so they load before a prefork server forks.</p>
-          <p><a href="guide.html#namespaces">Namespaces</a></p>
+          <h3>A class per namespace</h3>
+          <p><code>Admin::Breadcrumbs</code> and <code>Storefront::Breadcrumbs</code> keep their crumbs apart, so both can have an <code>orders</code> crumb. Rails loads them like any other file in <code>app/</code>.</p>
+          <p><a href="guide.html#namespaces">One trail class per namespace</a></p>
         </div>
         <div class="card">
-          <h3>One crumb per Ruby method</h3>
-          <p>The parent is a plain method call, and the URL helpers come from your routes. No DSL, no <code>method_missing</code>, and a backtrace points at the method.</p>
-          <p><a href="guide.html#usage">Usage</a></p>
+          <h3>Plain Ruby methods</h3>
+          <p>A crumb is a method, and its parent is a call to another one. Route helpers work as they do in a view, and a backtrace points at the line that failed.</p>
+          <p><a href="guide.html#usage">Writing crumbs</a></p>
         </div>
         <div class="card">
-          <h3>Derived by default</h3>
-          <p>A view that names no crumb gets the trail of its action, built from the routes and the record its controller already loaded, nested routes included.</p>
-          <p><a href="guide.html#derived">Derived trails</a></p>
+          <h3>Trails you don't write</h3>
+          <p>When a view names no crumb, the trail comes from the action, the routes and the record the controller loaded. Nested routes work too.</p>
+          <p><a href="guide.html#derived">Trails Crumbly works out</a></p>
         </div>
         <div class="card">
-          <h3>Mistakes raise early</h3>
-          <p>A crumb defined twice raises when the class loads. An unknown crumb raises in development and test; in production it is reported and the page renders without a trail.</p>
+          <h3>Mistakes show up early</h3>
+          <p>A crumb defined twice raises when the class loads. An unknown crumb raises in development and test. In production it is reported, and the page renders without a trail.</p>
           <p><a href="guide.html#errors">Errors</a></p>
         </div>
         <div class="card">
-          <h3>Checked in tests</h3>
-          <p>One <code>assert_breadcrumbs_valid</code> reads every crumb with Prism: unknown parents and route helpers, view calls to missing crumbs, and dead crumbs fail the test, without loading a record.</p>
-          <p><a href="guide.html#tests">Checked in tests</a></p>
+          <h3>One test for every trail</h3>
+          <p><code>assert_breadcrumbs_valid</code> reads the source of every crumb. It fails on a parent or route helper that doesn't exist, on a view calling a missing crumb, and on a crumb nothing uses. It never touches the database.</p>
+          <p><a href="guide.html#tests">Testing your trails</a></p>
         </div>
         <div class="card">
-          <h3>Data, not HTML</h3>
-          <p><code>breadcrumb_trail</code> returns levels (label, URL, extra links, <code>current?</code>). No styles, no renderer options: your component decides the markup.</p>
-          <p><a href="guide.html#rendering">Rendering</a></p>
+          <h3>Your own HTML</h3>
+          <p><code>breadcrumb_trail</code> returns the levels, each with a label, a URL and <code>current?</code>. The gem has no styles or rendering options, so the markup is up to you.</p>
+          <p><a href="guide.html#rendering">Rendering the trail</a></p>
         </div>
         <div class="card">
-          <h3>JSON-LD for storefronts</h3>
-          <p><code>breadcrumb_json_ld</code> renders the same trail as a schema.org <code>BreadcrumbList</code>; a relative URL raises in development and test, before Google ever reads it.</p>
-          <p><a href="guide.html#storefronts">Storefronts</a></p>
+          <h3>Breadcrumbs in Google results</h3>
+          <p><code>breadcrumb_json_ld</code> describes the trail as a schema.org <code>BreadcrumbList</code>, which Google reads to show breadcrumbs in its results. A relative URL raises in development, before Google sees it.</p>
+          <p><a href="guide.html#storefronts">Breadcrumbs for search engines</a></p>
         </div>
         <div class="card">
-          <h3>A codemod from gretel</h3>
-          <p><code>crumbly-convert</code> turns <code>config/breadcrumbs.rb</code> into a trail class, and a test compares the trails both gems draw before gretel goes.</p>
+          <h3>A converter from gretel</h3>
+          <p><code>crumbly-convert</code> turns <code>config/breadcrumbs.rb</code> into a trail class. While both gems are installed, your tests can compare the trails they draw.</p>
           <p><a href="migration.html#gretel">From gretel</a></p>
         </div>
       </div>
     </section>
 
+    <section aria-labelledby="why-title">
+      <h2 id="why-title">Where it comes from</h2>
+      <div class="prose">
+        <p>Crumbly started on a back office that used <a href="https://github.com/kzkn/gretel">gretel</a>: one breadcrumbs file of about 1,000 lines, with 265 crumbs and 380 calls in views. Everything lived in one global namespace, so the admin crumbs couldn't be kept apart from the storefront's, and a crumb defined twice silently replaced the first one. Mistakes only showed up when someone opened the page, and every trail was written by hand, even when the routes already said what it should be.</p>
+        <p>Crumbly keeps gretel's main idea, a crumb that names its parent, and writes it as plain Ruby. Here are five crumbs from that app in both gems.</p>
+      </div>
+    </section>
+
     <section aria-labelledby="cases-title">
-      <h2 id="cases-title">Five cases, side by side</h2>
-      <p class="note">gretel on the left, in <code>config/breadcrumbs.rb</code>; Crumbly on the right, in <code>app/breadcrumbs/admin/breadcrumbs.rb</code>.</p>
+      <h2 id="cases-title">Five crumbs in gretel and in Crumbly</h2>
+      <p class="note">gretel is on the left, in <code>config/breadcrumbs.rb</code>. Crumbly is on the right, in <code>app/breadcrumbs/admin/breadcrumbs.rb</code>.</p>
 
       <div class="case">
         <h3>A nested resource</h3>
@@ -173,8 +207,8 @@
       </div>
 
       <div class="case">
-        <h3>A recursive tree</h3>
-        <p>The ancestors are loaded once, in one query, and handed down the recursion.</p>
+        <h3>A tree of categories</h3>
+        <p>The ancestors are loaded once, in one query, and passed down the recursion.</p>
         <div class="split">
           <div>
             <p class="code-label">gretel</p>
@@ -199,7 +233,7 @@
         <h3>A form</h3>
         <div class="split">
           <div>
-            <p class="code-label">gretel: one generic crumb, called from each new and edit view</p>
+            <p class="code-label">gretel: one generic crumb, called from every new and edit view</p>
 <pre><code class="language-ruby"><span class="n">crumb</span> <span class="ss">:generic_form</span> <span class="k">do</span> <span class="o">|</span><span class="n">model</span><span class="o">|</span>
   <span class="k">if</span> <span class="n">model</span><span class="p">.</span><span class="nf">new_record?</span>
     <span class="n">link</span> <span class="s2">"New"</span><span class="p">,</span> <span class="kp">nil</span>
@@ -222,39 +256,6 @@
       </div>
     </section>
 
-    <section aria-labelledby="start-title">
-      <h2 id="start-title">Quick start</h2>
-      <div class="split">
-        <div>
-          <p class="code-label">app/breadcrumbs/admin/breadcrumbs.rb</p>
-<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
-  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
-    <span class="k">def</span> <span class="nf">root</span>
-      <span class="n">crumb</span> <span class="s2">"Home"</span><span class="p">,</span> <span class="n">admin_root_path</span>
-    <span class="k">end</span>
-
-    <span class="k">def</span> <span class="nf">orders</span>
-      <span class="n">crumb</span> <span class="s2">"Orders"</span><span class="p">,</span> <span class="n">admin_orders_path</span>
-    <span class="k">end</span>
-
-    <span class="k">def</span> <span class="nf">order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
-      <span class="n">crumb</span> <span class="n">order</span><span class="p">.</span><span class="nf">to_s</span><span class="p">,</span> <span class="n">admin_order_path</span><span class="p">(</span><span class="n">order</span><span class="p">),</span> <span class="ss">parent: </span><span class="n">orders</span>
-    <span class="k">end</span>
-  <span class="k">end</span>
-<span class="k">end</span></code></pre>
-        </div>
-        <div>
-          <p class="code-label">app/views/layouts/admin.html.erb</p>
-<pre><code class="language-erb"><span class="nt">&lt;nav</span> <span class="na">aria-label=</span><span class="s">"Breadcrumb"</span><span class="nt">&gt;</span>
-  <span class="nt">&lt;ol&gt;</span>
-    <span class="cp">&lt;%</span> <span class="n">breadcrumb_trail</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">level</span><span class="o">|</span> <span class="cp">%&gt;</span>
-      <span class="nt">&lt;li&gt;</span><span class="cp">&lt;%=</span> <span class="n">link_to_unless</span> <span class="n">level</span><span class="p">.</span><span class="nf">current?</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">label</span><span class="p">,</span> <span class="n">level</span><span class="p">.</span><span class="nf">url</span> <span class="cp">%&gt;</span><span class="nt">&lt;/li&gt;</span>
-    <span class="cp">&lt;%</span> <span class="k">end</span> <span class="cp">%&gt;</span>
-  <span class="nt">&lt;/ol&gt;</span>
-<span class="nt">&lt;/nav&gt;</span></code></pre>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="family">
