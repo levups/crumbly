@@ -165,8 +165,9 @@ module Crumbly
     end
 
     def dead_crumbs
-      reachable_names = called_names + derived_names
+      reachable_names_with_derivation = called_names + derived_names
       trail_classes.flat_map do |trail_class|
+        reachable_names = trail_class.derive_trails? ? reachable_names_with_derivation : called_names
         dead_names = crumb_names(trail_class).reject do |name|
           reachable_names.include?(name) || model_name?(name)
         end

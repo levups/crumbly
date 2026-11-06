@@ -2,7 +2,8 @@
 
 module Crumbly
   module ViewHelpers
-    # The view names its crumb; a view that says nothing gets the trail derived from its controller and action.
+    # The view names its crumb; a view that says nothing gets the trail derived from its controller and action,
+    # or none under `derive_trails false`.
     def breadcrumb(target, *arguments)
       @crumbly_breadcrumb = [target, arguments]
       @crumbly_trail = nil

@@ -72,6 +72,16 @@ class OracleWatchTest < IntegrationTestCase
       Crumbly::Oracle.redundant_calls.map(&:to_s)
   end
 
+  test "with derive_trails false, no call is redundant and a page without one matches gretel's empty trail" do
+    Crumbly::Oracle.watch do
+      get "/backstage/categories/3"
+      get "/backstage/posts"
+    end
+
+    assert_empty Crumbly::Oracle.differences
+    assert_empty Crumbly::Oracle.redundant_calls
+  end
+
   test "outside the block, nothing is compared" do
     Crumbly::Oracle.watch {}
     get "/admin/orders/42/messages"

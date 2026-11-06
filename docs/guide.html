@@ -145,13 +145,14 @@
           <thead><tr><th scope="col">Action</th><th scope="col">Trail</th></tr></thead>
           <tbody>
             <tr><td><code>index</code></td><td>The collection: your <code>posts</code> crumb if you wrote one, or else the model's plural name linked to the <code>index</code> route.</td></tr>
-            <tr><td><code>show</code></td><td>The record: your <code>post</code> crumb, or else its <code>to_s</code> linked to the <code>show</code> route, under the collection.</td></tr>
+            <tr><td><code>show</code></td><td>The record: your <code>post</code> crumb, or else its label linked to the <code>show</code> route, under the collection.</td></tr>
             <tr><td><code>new</code>, <code>create</code></td><td>"New" under the collection.</td></tr>
             <tr><td><code>edit</code>, <code>update</code></td><td>"Edit" under the record.</td></tr>
           </tbody>
         </table>
         <p>The record is the one the controller has already loaded, <code>@post</code> in <code>PostsController</code>. Crumbly never runs a query to find it, and without it <code>show</code> and <code>edit</code> get no trail. A controller with no <code>index</code> or <code>show</code> route still gets its level, without a link. Other actions get nothing.</p>
         <h3>Labels</h3>
+        <p>A record's label is its <code>to_s</code>. A model without a <code>to_s</code> of its own gets its model name, translated by <code>model_name.human</code>, and its id instead: "Post 5", not <code>#&lt;Post:0x000...&gt;</code>.</p>
         <p>"New" and "Edit" come from the <code>crumbly.new</code> and <code>crumbly.edit</code> translations:</p>
 <pre><code class="language-yaml"><span class="c1"># config/locales/es.yml</span>
 <span class="na">es</span><span class="pi">:</span>
@@ -170,8 +171,16 @@
   <span class="k">end</span>
 <span class="k">end</span></code></pre>
         <h3>Nested routes</h3>
-        <p>Under a nested route, each <code>:&lt;name&gt;_id</code> path parameter adds a parent level, outermost first. On <code>/admin/posts/5/comments</code>, the trail is Posts › Post 5 › Comments, and the post is the <code>@post</code> the controller loaded. Its level is your <code>post</code> crumb, or else its <code>to_s</code> linked to its <code>show</code> route.</p>
+        <p>Under a nested route, each <code>:&lt;name&gt;_id</code> path parameter adds a parent level, outermost first. On <code>/admin/posts/5/comments</code>, the trail is Posts › Post 5 › Comments, and the post is the <code>@post</code> the controller loaded. Its level is your <code>post</code> crumb, or else its label linked to its <code>show</code> route.</p>
         <p>If the controller didn't load a parent, Crumbly doesn't query it. It skips that level and the crumb named after the nesting, and keeps the parent's collection: Posts › Comments.</p>
+        <h3 id="derive-trails">Turning them off</h3>
+        <p>To draw only the trails your views name, set <code>derive_trails false</code> in the trail class. A view that doesn't call <code>breadcrumb</code> then has no trail, as with gretel: <code>breadcrumb_trail</code> returns <code>[]</code> and <code>breadcrumb_json_ld</code> returns <code>nil</code>.</p>
+<pre><code class="language-ruby"><span class="k">module</span> <span class="nn">Admin</span>
+  <span class="k">class</span> <span class="nc">Breadcrumbs</span> <span class="o">&lt;</span> <span class="no">Crumbly</span><span class="o">::</span><span class="no">Trail</span>
+    <span class="n">derive_trails</span> <span class="kp">false</span>
+  <span class="k">end</span>
+<span class="k">end</span></code></pre>
+        <p>Subclasses inherit the setting, and <code>derive_trails true</code> turns it back on in one of them. The breadcrumbs test no longer counts a crumb as used because a derived trail would read it, and <code>Crumbly::Oracle</code> lists no call as redundant.</p>
       </div>
     </section>
 
@@ -184,6 +193,7 @@
           <li>Your crumb named after the controller: <code>posts</code> in <code>Admin::PostsController#index</code>. Under a nested route it is named after the whole nesting and gets the parent records, so <code>/admin/orders/42/messages</code> calls <code>order_messages(order)</code>. On <code>show</code> and <code>edit</code>, it is the crumb named after the record's model (<code>post</code>).</li>
           <li>The trail Crumbly works out. Its parent levels follow the same rule: your crumb for the parent's model if there is one, or else a level Crumbly builds.</li>
         </ol>
+        <p>With <a href="#derive-trails"><code>derive_trails false</code></a>, only the first applies.</p>
       </div>
     </section>
 
@@ -205,7 +215,7 @@
           <li>a crumb's parent is not a crumb, or a <code>_path</code> or <code>_url</code> it calls is not a route helper;</li>
           <li>a <code>breadcrumb :name</code> in <code>app/views</code> or <code>app/controllers</code> names a crumb that no trail class defines;</li>
           <li>a view or another crumb calls a crumb with the wrong number of arguments. gretel ignored extra arguments and passed <code>nil</code> for missing ones, but a method raises <code>ArgumentError</code>. Calls spread over several lines, or with a splat, are skipped;</li>
-          <li>a crumb is never used. A crumb is used when another crumb, a view or a controller calls it (<code>breadcrumb :name</code>, <code>breadcrumb @record</code>), when a trail Crumbly works out reads it, or when it is named after a model.</li>
+          <li>a crumb is never used. A crumb is used when another crumb, a view or a controller calls it (<code>breadcrumb :name</code>, <code>breadcrumb @record</code>), when a trail Crumbly works out reads it (unless its class sets <code>derive_trails false</code>), or when it is named after a model.</li>
         </ul>
         <p>A crumb defined twice in the same class is caught even earlier: the class raises <code>Crumbly::DuplicateCrumb</code> when it loads.</p>
         <p>Outside Minitest, <code>Crumbly.verify!</code> runs the same checks. It raises <code>Crumbly::InvalidTrail</code> with every problem in one message, and returns the unused crumbs (<code>["Admin::Breadcrumbs#drafts"]</code>). Both accept <code>trail_classes:</code>, <code>routes:</code> and <code>sources:</code>, the directories it scans for <code>breadcrumb</code> calls.</p>

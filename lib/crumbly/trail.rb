@@ -37,6 +37,18 @@ module Crumbly
         raise DuplicateCrumb, "#{self}##{name} is defined twice: the second definition would replace the first"
       end
 
+      def derive_trails(derive)
+        raise ArgumentError, "derive_trails takes true or false, not #{derive.inspect}" unless derive in true | false
+
+        @derive_trails = derive
+      end
+
+      def derive_trails?
+        return @derive_trails unless @derive_trails.nil?
+
+        self == Trail || superclass.derive_trails?
+      end
+
       def crumb?(name)
         trail_class = self
         while trail_class < Trail
@@ -52,6 +64,8 @@ module Crumbly
       end
 
       def derive(helpers)
+        return [] unless derive_trails?
+
         new(helpers).send(:derived_levels)
       end
     end
@@ -196,7 +210,14 @@ module Crumbly
     def record_crumb(record)
       return crumb_for(record) if crumb_name_for(record)
 
-      crumb(record.to_s, route_path(action: "show", id: record), parent: collection_crumb)
+      crumb(record_label(record), route_path(action: "show", id: record), parent: collection_crumb)
+    end
+
+    # Kernel#to_s would label the level "#<Invoice:0x000...>".
+    def record_label(record)
+      return record.to_s unless record.class.instance_method(:to_s).owner == Kernel && record.class.respond_to?(:model_name)
+
+      "#{record.model_name.human} #{record.to_param}"
     end
 
     def new_record_crumb
@@ -235,7 +256,7 @@ module Crumbly
       return crumb_for(parent.record) if crumb_name_for(parent.record)
 
       name = parent.name.pluralize
-      crumb(parent.record.to_s, route_path(resources: name, action: "show", id: parent.id, **route_parent_ids(ancestors)),
+      crumb(record_label(parent.record), route_path(resources: name, action: "show", id: parent.id, **route_parent_ids(ancestors)),
         parent: nested_collection_crumb(name, ancestors))
     end
 

@@ -26,7 +26,15 @@ ROUTES.draw do
         resources :replies, only: :index
       end
     end
+    resources :invoices, only: [:index, :show] do
+      resources :payments, only: :index
+    end
     get "reports/sales", to: "reports#sales", as: :sales_report
+  end
+
+  namespace :backstage do
+    resources :categories, only: :show
+    resources :posts, only: :index
   end
 
   namespace :storefront do
@@ -100,6 +108,9 @@ class Comment < Record
   end
 end
 
+class Invoice < Record
+end
+
 ALICE = Customer.new(id: 7, name: "Alice")
 ORDER = Order.new(id: 42, number: "2026-0042", customer: ALICE)
 BOOKS = Category.new(id: 1, name: "Books")
@@ -107,6 +118,7 @@ FICTION = Category.new(id: 2, name: "Fiction", parent: BOOKS)
 NOVELS = Category.new(id: 3, name: "Novels", parent: FICTION)
 POST = Post.new(id: 5, title: "Hello")
 COMMENT = Comment.new(id: 9, body: "First!")
+INVOICE = Invoice.new(id: 12)
 
 module Admin
   class Breadcrumbs < Crumbly::Trail
@@ -249,9 +261,38 @@ module Admin
     end
   end
 
+  class InvoicesController < ApplicationController
+    def show
+      @invoice = INVOICE
+      render inline: OrdersController::TRAIL
+    end
+  end
+
+  class PaymentsController < ApplicationController
+    def index
+      @invoice = INVOICE
+      render inline: OrdersController::TRAIL
+    end
+  end
+
   class ReportsController < ApplicationController
     def sales
       render inline: "<% breadcrumb :sales_report %>#{OrdersController::TRAIL}"
+    end
+  end
+end
+
+module Backstage
+  class Breadcrumbs < Admin::Breadcrumbs
+    derive_trails false
+  end
+
+  class CategoriesController < Admin::CategoriesController
+  end
+
+  class PostsController < ApplicationController
+    def index
+      render inline: "<%= breadcrumb_trail.inspect %> <%= breadcrumb_json_ld.inspect %>"
     end
   end
 end

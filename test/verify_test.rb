@@ -49,6 +49,14 @@ module Checked
     end
   end
 
+  class Explicit < Crumbly::Trail
+    derive_trails false
+
+    def orders
+      crumb "Orders", admin_orders_path
+    end
+  end
+
   class CalledFromHelper < Crumbly::Trail
     def orders
       crumb "Orders", admin_orders_path
@@ -149,6 +157,10 @@ class VerifyTest < ActiveSupport::TestCase
 
     failure = assert_raises(Minitest::Assertion) { assert_breadcrumbs_valid(trail_classes: [Checked::DeadCrumb], sources: []) }
     assert_match "Dead crumbs, called by no crumb, view or controller: Checked::DeadCrumb#archived_orders", failure.message
+  end
+
+  test "a crumb only a derived trail would read is dead when the trail class derives none" do
+    assert_equal ["Checked::Explicit#orders"], verify(Checked::Explicit)
   end
 
   test "a crumb is alive when a view, or a private helper of its trail, calls it" do
