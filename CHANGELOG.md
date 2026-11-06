@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-11-06
+
+Crumbs refuse `javascript:`, `vbscript:` and `data:` URLs, and a nil record, odd bytes or `=begin` comments no longer break Crumbly.
+
+**New**
+- `Crumbly::UnsafeUrl`, for a crumb or a `link` whose URL is `javascript:`, `vbscript:` or `data:`, in any case and with the spaces, control characters, tabs and line breaks that browsers drop. It raises in development and test; in production it goes to `Rails.error`, and the level keeps its label without the link. `Crumbly.raise_on_unsafe_url` chooses, like the other two settings.
+
+**Fixed**
+- loofah's floor moves to 2.25.3, and with it nokogiri's to 1.19.5: the first versions without the 2026 advisories, two of them in the HTML5 scrubber Crumbly calls on `html_safe` labels.
+- `breadcrumb` with a nil record, or an object without a model, raises or reports `Crumbly::UnknownCrumb` instead of a `NoMethodError` that failed the page. A `parent:` that is not a crumb raises an `ArgumentError` that names it.
+- `breadcrumb_json_ld` replaces invalid bytes in a label with U+FFFD, and reads `HTTPS://` as an absolute URL.
+- `Crumbly.verify!` and `crumbly-convert --views` read files that are not UTF-8 instead of crashing.
+- `crumbly-convert` writes `=begin` comments as `#` lines, and keeps a loop value interpolated in a regexp, a command, a `%W` array or `%Q/`, where it wrote Ruby that doesn't parse.
+
 ## [2.0.0] — 2026-11-05
 
 GretelX is now Crumbly, in the levups organization: same breadcrumbs, new names.
@@ -62,7 +76,8 @@ tests. Replaces gretel: `crumbly-convert` turns its breadcrumbs files into Crumb
   `breadcrumb` calls a derived trail may now cover.
 - `Crumbly::Oracle.compare` draws trails with gretel and with Crumbly, from a test of an app migrating.
 
-[Unreleased]: https://github.com/levups/crumbly/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/levups/crumbly/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/levups/crumbly/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/levups/crumbly/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/levups/crumbly/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/levups/crumbly/releases/tag/v1.0.0
