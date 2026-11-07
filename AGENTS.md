@@ -3,8 +3,7 @@
 Breadcrumbs for Rails: one `Crumbly::Trail` class per namespace, trails derived from the routes, checked in tests
 with `Crumbly.verify!`, and `crumbly-convert` plus `Crumbly::Oracle` to migrate from gretel.
 
-Read `README.md` for usage, `STYLE.md` for code style and `CONTRIBUTING.md` for contributions; this file only
-adds what they leave out.
+`README.md` covers usage, `STYLE.md` code style, `CONTRIBUTING.md` contributions; this file adds what they leave out.
 
 ## Commands
 
@@ -16,12 +15,12 @@ bundle exec ruby [--yjit] bench/render.rb                        # render time a
 ```
 
 CI also runs `ruby-head`, and every Ruby with each Gemfile. A new Rails gets a `gemfiles/rails_X_Y.gemfile` and
-joins the `rails` matrix in CI.
+joins CI's `rails` matrix.
 
 ## Traps
 
-- gretel and Prism are not runtime dependencies: keep them out of the gemspec. `Crumbly::Oracle` needs gretel; the
-  converter and the verifier need Prism 1.2+ (bundled from Ruby 3.4, `gem "prism"` on 3.3).
+- gretel and Prism stay out of the gemspec. `Crumbly::Oracle` needs gretel; the converter and the verifier need
+  Prism 1.2+ (bundled from Ruby 3.4, `gem "prism"` on 3.3).
 - A derived trail reads the record the controller already loaded (`@order`), never a query.
 - An unknown crumb or a relative JSON-LD URL raises outside production and goes to `ActiveSupport.error_reporter`
   in production: test both paths.
@@ -40,33 +39,39 @@ This section and the next two read the same in super-slim, gamba, crumbly and ag
   with the reason. A pure performance change pins no internals in tests.
 - Test and bench data are anonymized: `alice`, `Post`, `example.com`.
 - Everything in the repository is in English (code, comments, commits, pull requests, issues, reviews, replies),
-  whatever the language of the conversation.
+  whatever the conversation's language.
 - No AI attribution in anything people read.
 
 ## Pull requests and issues
 
-- `main` takes no direct push. Every change, releases included, goes through a pull request that merges itself
-  once CI is green: `gh pr merge --auto --squash`.
-- Drafts run no CI. Confident in the change? Open it ready for review, auto-merge on. Not yet? Open a draft, then
-  `gh pr ready` when it needs CI.
-- Never edit `CHANGELOG.md` in a pull request: they would all conflict. It is written at release time.
-- Title: the change as a user sees it (for an issue, the finding), in plain words, under 70 characters.
-- Body, no headings: two short paragraphs, the problem then the change (for an issue, what to do); 3 to 5 bullets,
-  each opening with a **bold 2–4 word lead-in**; the proof (reproduction, tests, benchmarks) folded in one
-  `<details>`. Nothing the diff or CI already says.
-- Never hard-wrap a pull request, an issue or a comment: GitHub renders every line break. One line per paragraph
-  and per bullet.
+- `main` takes no direct push: every change, releases included, goes through a pull request that merges itself once
+  CI is green (`gh pr merge --auto --squash`).
+- Drafts run no CI. Confident: open it ready, auto-merge on. Not yet: a draft, then `gh pr ready` when it needs CI.
+- Never edit `CHANGELOG.md` in a pull request, they would all conflict: it is written at release time.
+- Title: the change as a user sees it (an issue: the finding), in plain words, under 70 characters.
+- Body, no headings: two short paragraphs, the problem then the change (an issue: what to do); 3 to 5 bullets, each
+  opening with a **bold 2–4 word lead-in**; the proof (reproduction, tests, benchmarks) folded in one `<details>`.
+  Nothing the diff or CI already says.
+- Never hard-wrap a pull request, an issue or a comment: GitHub renders every line break. One line per paragraph and
+  per bullet.
 
 ## Releases
 
-1. List the pull requests merged since the last tag: `git log --first-parent --oneline <tag>..origin/main`, then
-   `gh pr view <n>` for each.
-2. Write the release under `## [Unreleased]` in `CHANGELOG.md`, uncommitted: a one-sentence lede, then
-   **Breaking**, **New**, **Faster** (measured) and **Fixed**, only those with entries. One entry per change users
-   can see, written for them; CI, refactoring, docs and tests get none. No version, date or link: `bin/release`
-   adds them.
-3. Show it to the user. Then `bin/release patch|minor|major` (try `--dry-run` first) commits it through a pull
-   request, waits for the merge and tags it; the tag runs `.github/workflows/release.yml`, which publishes the gem.
+The user is needed twice: a working git signing key (the tag is signed) and one click approving the `release`
+environment on GitHub.
 
-RubyGems trusts only that workflow: never `gem push` from a machine, except the very first version of a new gem
-name. `bin/release` and `release.yml` are the same in all four gems.
+1. Another session may have just released: `git fetch --tags origin`, and `gh pr list --search "head:release/"`
+   must be empty. Unreleased changes: `git log --first-parent --oneline $(git describe --tags --abbrev=0 origin/main)..origin/main`,
+   then `gh pr view <n>` for each.
+2. Write the release under `## [Unreleased]` in `CHANGELOG.md`, uncommitted: a one-sentence lede, then **Breaking**,
+   **New**, **Faster** (measured), **Fixed**, only those with entries. One entry per change users see, written for
+   them; CI, refactoring, docs and tests get none. No version, date or link: `bin/release` adds them.
+3. Show it to the user, wait for their go. From `main` level with `origin/main`, `CHANGELOG.md` its only change:
+   `bin/release minor --dry-run`, then `bin/release minor --yes` (or `patch`, `major`). It opens `release/vX.Y.Z`,
+   waits for it to merge itself, pushes the signed tag. Signing fails: the user fixes it, never an unsigned tag.
+   Interrupted after the merge: `bin/release --tag X.Y.Z`.
+4. The tag runs `release.yml`, which waits for the user to approve the `release` environment (the run's Review
+   deployments), then publishes to RubyGems and GitHub. Tell the user, then check RubyGems.
+
+RubyGems trusts only that workflow: never `gem push`, except a new gem name's first version. `bin/release` and
+`release.yml` are identical in all four gems.
