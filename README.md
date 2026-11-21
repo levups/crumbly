@@ -373,10 +373,11 @@ bin/release minor --dry-run   # shows the notes and the changes, writes nothing
 bin/release minor             # or patch, major, or an exact version such as 1.2.0
 ```
 
-`bin/release` bumps the version on a `release/vX.Y.Z` branch, opens its pull request, waits for it to merge
-itself once CI is green, and pushes a signed tag `vX.Y.Z` on the merge commit (`bin/release --tag X.Y.Z` resumes
-this step if you stopped it). The tag starts the Release workflow, which publishes the gem to RubyGems through
-trusted publishing and creates the GitHub release.
+`main` takes no direct push, so `bin/release` dates the notes and bumps the version on a `release/vX.Y.Z` branch,
+opens a pull request that merges itself once CI is green, and waits for it (`bin/release --wait X.Y.Z` if you
+stopped it). The merge starts the Release workflow, which waits for a maintainer's approval, tags the merge commit
+`vX.Y.Z`, publishes the gem to RubyGems through trusted publishing and creates the GitHub release with the notes
+and the `.gem`.
 
 ## License
 
