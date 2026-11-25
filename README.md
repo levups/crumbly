@@ -13,6 +13,9 @@ checks every trail in the app, so a broken one fails CI before anyone opens the 
 
 The guide, the migration notes and the benchmarks are also on the website: <https://levups.github.io/crumbly/>.
 
+Coding agents can start from <https://levups.github.io/crumbly/llms.txt>, or read this README and the
+website's pages as one Markdown file: <https://levups.github.io/crumbly/llms-full.txt>.
+
 ## Why Crumbly
 
 Crumbly was written to replace [gretel](https://github.com/kzkn/gretel) in a back office with 265 crumbs, in one
@@ -359,6 +362,7 @@ bundle exec rake test                                            # latest Rails
 BUNDLE_GEMFILE=gemfiles/rails_8_0.gemfile bundle exec rake test  # Rails 8.0
 bundle exec rubocop
 bundle exec rake docs:highlight                                  # after editing a code block in docs/
+bundle exec rake docs:llms                                       # after editing the README or docs/
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) says what a pull request needs.
