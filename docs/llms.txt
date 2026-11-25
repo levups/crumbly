@@ -1,0 +1,18 @@
+# Crumbly
+
+> Breadcrumb trails for Rails, written as plain Ruby methods and checked in tests
+
+Install with `gem "crumbly"` in the Gemfile.
+
+## Docs
+
+- [Everything in one file](https://levups.github.io/crumbly/llms-full.txt): the README, then every page below but the home page, in Markdown
+- [Crumbly: breadcrumbs for Rails](https://levups.github.io/crumbly/): Crumbly builds the breadcrumb trails of a Rails app from plain Ruby methods, works most of them out from the routes, and checks them all in one test.
+- [Crumbly Guide](https://levups.github.io/crumbly/guide.html): Install Crumbly, write a namespace's crumbs, render the trail, let actions and nested routes derive it, check it in tests, and render it as JSON-LD.
+- [Migrating to Crumbly](https://levups.github.io/crumbly/migration.html): Move to Crumbly from gretel (with a codemod and a comparison test), breadcrumbs_on_rails or loaf: what maps to what, and what you can delete.
+
+## Optional
+
+- [Crumbly Benchmarks](https://levups.github.io/crumbly/benchmarks.html): Crumbly against gretel on the same five-level trail: render time and allocations, as an ol and as JSON-LD, with and without YJIT.
+- [Changelog](https://github.com/levups/crumbly/blob/main/CHANGELOG.md): what changed in each version
+- [Source code](https://github.com/levups/crumbly)
